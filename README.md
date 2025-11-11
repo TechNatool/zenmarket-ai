@@ -12,10 +12,22 @@ ZenMarket AI is a professional-grade automated system that generates comprehensi
 
 ## Features
 
+### 📰 Financial Intelligence (News & Sentiment)
 - **Automated News Aggregation**: Fetches financial news from multiple sources (NewsAPI, RSS feeds)
-- **Real-Time Market Data**: Tracks major indices (DAX, NASDAQ, S&P 500), forex (EUR/USD), and crypto (BTC-USD)
 - **AI-Powered Analysis**: Uses OpenAI GPT-4 or Anthropic Claude for summaries and insights
 - **Sentiment Analysis**: Analyzes market sentiment with lexicon-based and AI methods
+- **Daily Financial Brief**: Comprehensive market overview with top news and sentiment distribution
+
+### 📈 AI Trading Advisor (NEW!)
+- **Technical Analysis**: Automated calculation of MA20/50, RSI(14), Bollinger Bands, ATR
+- **Trading Signals**: AI-generated BUY/SELL/HOLD signals based on technical indicators
+- **Visual Charts**: Professional matplotlib charts with price, indicators, and volume
+- **Signal Confidence**: Each signal includes confidence score and detailed reasoning
+- **Market Bias Detection**: Overall market sentiment based on multiple signals
+- **Trading Brief Report**: Dedicated technical analysis report with actionable signals
+
+### 🚀 General
+- **Real-Time Market Data**: Tracks major indices (DAX, NASDAQ, S&P 500), forex (EUR/USD), and crypto (BTC-USD)
 - **Beautiful Reports**: Generates reports in Markdown, HTML, and PDF formats with charts
 - **Automated Delivery**: Optional Telegram bot integration for automatic report delivery
 - **Professional Quality**: Production-ready code with logging, error handling, and type hints
@@ -67,8 +79,14 @@ AI_PROVIDER=openai  # or anthropic
 ### 4. Run Your First Report
 
 ```bash
-# Generate a report
+# Generate financial news report
 python -m src.main
+
+# Generate trading advisor report
+python -m src.main --trading-only
+
+# Generate BOTH reports
+python -m src.main --trading-advisor
 
 # Or use the automation script
 ./scripts/daily_report.sh
@@ -80,7 +98,7 @@ Your reports will be saved in the `reports/` directory.
 
 ## Usage
 
-### Command Line Interface
+### Financial Intelligence Report
 
 ```bash
 # Basic usage - generate all formats
@@ -98,6 +116,32 @@ python -m src.main --no-ai
 # Enable debug logging
 python -m src.main --log-level DEBUG
 ```
+
+### AI Trading Advisor
+
+```bash
+# Generate trading advisor report only
+python -m src.main --trading-only
+
+# Generate both financial brief and trading advisor
+python -m src.main --trading-advisor
+
+# Skip chart generation (faster)
+python -m src.main --trading-only --no-charts
+
+# Analyze specific tickers
+python -m src.advisor --tickers "^GDAXI,^IXIC,BTC-USD"
+
+# Debug mode
+python -m src.advisor --log-level DEBUG
+```
+
+**Trading Advisor Features:**
+- Calculates technical indicators: MA20/50, RSI(14), Bollinger Bands, ATR
+- Generates BUY/SELL/HOLD signals with confidence scores
+- Creates technical charts for each ticker
+- Provides AI-powered market commentary
+- Outputs detailed reasoning for each signal
 
 ### Automation Script
 

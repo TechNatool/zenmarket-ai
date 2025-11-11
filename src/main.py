@@ -18,6 +18,7 @@ from .core.market_data import MarketDataFetcher
 from .core.sentiment_analyzer import SentimentAnalyzer
 from .core.summarizer import AISummarizer
 from .core.report_generator import ReportGenerator
+from .advisor.advisor_report import AdvisorReportGenerator
 
 
 def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None) -> dict:
@@ -213,6 +214,8 @@ Examples:
   python -m src.main --no-ai            # Generate without AI (faster)
   python -m src.main --format markdown  # Generate only Markdown
   python -m src.main --format pdf html  # Generate PDF and HTML only
+  python -m src.main --trading-advisor  # Generate trading advisor report too
+  python -m src.main --trading-only     # Generate only trading advisor report
   python -m src.main --log-level DEBUG  # Enable debug logging
         """
     )
@@ -235,6 +238,24 @@ Examples:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
         help="Logging level (default: INFO)"
+    )
+
+    parser.add_argument(
+        "--trading-advisor",
+        action="store_true",
+        help="Also generate trading advisor report with technical analysis"
+    )
+
+    parser.add_argument(
+        "--trading-only",
+        action="store_true",
+        help="Generate only trading advisor report (skip news report)"
+    )
+
+    parser.add_argument(
+        "--no-charts",
+        action="store_true",
+        help="Skip chart generation in trading advisor"
     )
 
     parser.add_argument(
@@ -263,17 +284,46 @@ Examples:
     logger.info(f"AI Provider: {config.ai_provider}")
     logger.info(f"Output formats: {', '.join(args.format or config.report_formats)}")
 
-    # Run report generation
-    result = run_daily_report(
-        use_ai=not args.no_ai,
-        output_formats=args.format
-    )
+    success = True
 
-    if result["success"]:
-        logger.info("Report generation completed successfully!")
+    # Generate financial brief (unless trading-only)
+    if not args.trading_only:
+        logger.info("\n📰 Generating Financial Brief...")
+        result = run_daily_report(
+            use_ai=not args.no_ai,
+            output_formats=args.format
+        )
+
+        if not result["success"]:
+            logger.error(f"Financial brief generation failed: {result.get('error', 'Unknown error')}")
+            success = False
+
+    # Generate trading advisor report (if requested or trading-only)
+    if args.trading_advisor or args.trading_only:
+        logger.info("\n📈 Generating Trading Advisor Report...")
+        try:
+            advisor = AdvisorReportGenerator()
+            advisor_result = advisor.generate_full_report(
+                generate_charts=not args.no_charts
+            )
+
+            if advisor_result["success"]:
+                logger.info("Trading advisor report generated successfully!")
+            else:
+                logger.error(f"Trading advisor report failed: {advisor_result.get('error', 'Unknown')}")
+                success = False
+
+        except Exception as e:
+            logger.error(f"Error generating trading advisor report: {e}", exc_info=True)
+            success = False
+
+    if success:
+        logger.info("\n" + "=" * 70)
+        logger.info("✅ All reports generated successfully!")
+        logger.info("=" * 70)
         sys.exit(0)
     else:
-        logger.error(f"Report generation failed: {result.get('error', 'Unknown error')}")
+        logger.error("\n❌ Some reports failed to generate")
         sys.exit(1)
 
 
