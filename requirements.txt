@@ -1,0 +1,42 @@
+# ZenMarket AI - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# === Core Dependencies ===
+python-dotenv>=1.0.0
+requests>=2.31.0
+pytz>=2024.1
+
+# === Financial Data ===
+yfinance>=0.2.36
+pandas>=2.2.0
+numpy>=1.26.0
+
+# === News Fetching ===
+feedparser>=6.0.11
+
+# === AI / NLP ===
+openai>=1.12.0
+anthropic>=0.18.0
+
+# === Visualization ===
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# === Report Generation ===
+markdown2>=2.4.12
+weasyprint>=61.0
+
+# === Optional: Enhanced Sentiment Analysis ===
+# transformers>=4.37.0
+# torch>=2.2.0
+# sentencepiece>=0.1.99
+
+# === Development Dependencies ===
+pytest>=8.0.0
+pytest-cov>=4.1.0
+black>=24.1.0
+flake8>=7.0.0
+mypy>=1.8.0
+
+# === Utilities ===
+python-dateutil>=2.8.2
