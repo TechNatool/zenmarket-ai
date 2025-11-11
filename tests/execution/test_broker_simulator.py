@@ -52,6 +52,7 @@ def test_get_account_initial(broker):
 def test_place_market_order_buy(broker):
     """Test placing a market buy order."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     order = broker.place_order(
         symbol="AAPL",
@@ -70,6 +71,7 @@ def test_place_market_order_buy(broker):
 def test_place_market_order_sell(broker):
     """Test placing a market sell order."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     # First buy
     broker.place_order(
@@ -95,6 +97,7 @@ def test_place_market_order_sell(broker):
 def test_get_positions_after_buy(broker):
     """Test getting positions after buying."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     broker.place_order(
         symbol="AAPL",
@@ -112,6 +115,8 @@ def test_get_positions_after_buy(broker):
 def test_get_positions_multiple_symbols(broker):
     """Test positions with multiple symbols."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
+    broker._mock_prices["MSFT"] = Decimal('300')  # Mock price
 
     broker.place_order("AAPL", OrderSide.BUY, Decimal('100'), OrderType.MARKET)
     broker.place_order("MSFT", OrderSide.BUY, Decimal('50'), OrderType.MARKET)
@@ -127,6 +132,7 @@ def test_get_positions_multiple_symbols(broker):
 def test_get_position_by_symbol(broker):
     """Test getting specific position."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     broker.place_order("AAPL", OrderSide.BUY, Decimal('100'), OrderType.MARKET)
 
@@ -205,6 +211,7 @@ def test_insufficient_funds(broker):
 def test_insufficient_position(broker):
     """Test sell rejection with insufficient position."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     # Try to sell without owning
     order = broker.place_order(
@@ -221,6 +228,7 @@ def test_insufficient_position(broker):
 def test_partial_position_tracking(broker):
     """Test position tracking with multiple orders."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     # Buy 100 shares
     broker.place_order("AAPL", OrderSide.BUY, Decimal('100'), OrderType.MARKET)
@@ -299,6 +307,7 @@ def test_ledger_persistence(broker, tmp_path):
     import os
 
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
     broker.place_order("AAPL", OrderSide.BUY, Decimal('100'), OrderType.MARKET)
 
     # Ledger should have entries
@@ -340,6 +349,7 @@ def test_buying_power_calculation(broker):
 def test_multiple_fills_same_order(broker):
     """Test that orders create fill records."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     order = broker.place_order("AAPL", OrderSide.BUY, Decimal('100'), OrderType.MARKET)
 
@@ -351,6 +361,7 @@ def test_multiple_fills_same_order(broker):
 def test_order_metadata(broker):
     """Test order metadata storage."""
     broker.connect()
+    broker._mock_prices["AAPL"] = Decimal('150')  # Mock price
 
     order = broker.place_order(
         symbol="AAPL",
@@ -361,8 +372,8 @@ def test_order_metadata(broker):
         signal_confidence=0.85
     )
 
-    assert order.metadata.get('strategy') == "test_strategy"
-    assert order.metadata.get('signal_confidence') == 0.85
+    assert order.strategy == "test_strategy"
+    assert order.signal_confidence == 0.85
 
 
 def test_simulator_with_zero_commission(broker):

@@ -78,13 +78,14 @@ def test_validate_order_oversized_position(risk_manager):
 
 def test_validate_order_excessive_risk(risk_manager):
     """Test rejection of excessive risk per trade."""
-    # Risk per share: $10, 500 shares = $5000 risk (5% of equity)
+    # Position: 150 shares @ $100 = $15,000 (15% of equity) - under 20% position limit
+    # Risk: $7/share * 150 = $1,050 (1.05% of equity) - exceeds 1% trade risk limit
     is_valid, error = risk_manager.validate_order(
         symbol="AAPL",
         side=OrderSide.BUY,
-        quantity=Decimal('500'),
+        quantity=Decimal('150'),
         entry_price=Decimal('100'),
-        stop_loss=Decimal('90')
+        stop_loss=Decimal('93')
     )
 
     # Should fail (exceeds 1% risk per trade limit)
@@ -108,6 +109,10 @@ def test_validate_order_no_stop_loss(risk_manager):
 
 def test_max_positions_limit(risk_manager, broker):
     """Test max open positions limit."""
+    # Setup mock prices for test symbols
+    for i in range(6):
+        broker._mock_prices[f"TEST{i}"] = Decimal('100')
+
     # Place 5 orders to reach limit
     for i in range(5):
         broker.place_order(
@@ -284,20 +289,25 @@ def test_daily_risk_accumulation(risk_manager):
 
 def test_closing_order_allowed_when_at_max_positions(risk_manager, broker):
     """Test that closing orders are allowed even at max positions."""
-    # Open 5 positions
+    # Setup mock prices for 5 different symbols
+    for i in range(5):
+        broker._mock_prices[f"TEST{i}"] = Decimal('100')
+
+    # Open 5 positions on different symbols to reach max positions limit
+    # Use small quantities to avoid triggering drawdown circuit breaker
     for i in range(5):
         broker.place_order(
-            symbol="TEST0",  # All same symbol
+            symbol=f"TEST{i}",
             side=OrderSide.BUY,
-            quantity=Decimal('10'),
+            quantity=Decimal('5'),
             order_type="market"
         )
 
-    # Try to sell (close position) - should be allowed
+    # Try to sell (close position) on TEST0 - should be allowed even at max positions
     is_valid, error = risk_manager.validate_order(
         symbol="TEST0",
         side=OrderSide.SELL,
-        quantity=Decimal('10'),
+        quantity=Decimal('5'),
         entry_price=Decimal('100'),
         stop_loss=None
     )

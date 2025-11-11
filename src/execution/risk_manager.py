@@ -189,7 +189,7 @@ class RiskManager:
         # Calculate position value
         position_value = quantity * entry_price
 
-        # 1. Check position size limit
+        # 1. Check position size limit first
         position_pct = float(position_value / equity)
         if position_pct > self.limits.max_position_size_pct:
             return False, (
@@ -198,22 +198,25 @@ class RiskManager:
             )
 
         # 2. Check per-trade risk limit (if stop loss provided)
+        trade_risk_pct = 0.0
         if stop_loss:
             risk_per_share = abs(entry_price - stop_loss)
             dollar_risk = risk_per_share * quantity
-            risk_pct = float(dollar_risk / equity)
+            trade_risk_pct = float(dollar_risk / equity)
 
-            if risk_pct > self.limits.max_risk_per_trade_pct:
+            if trade_risk_pct > self.limits.max_risk_per_trade_pct:
                 return False, (
-                    f"Trade risk {risk_pct:.2%} exceeds limit "
+                    f"Trade risk {trade_risk_pct:.2%} exceeds limit "
                     f"{self.limits.max_risk_per_trade_pct:.2%}"
                 )
 
-        # 3. Check daily risk limit
-        if self.state.daily_risk_used_pct >= self.limits.max_risk_per_day_pct:
+        # 3. Check daily risk limit (including this trade's risk)
+        projected_daily_risk = self.state.daily_risk_used_pct + trade_risk_pct
+        if projected_daily_risk >= self.limits.max_risk_per_day_pct:
             return False, (
-                f"Daily risk limit reached: {self.state.daily_risk_used_pct:.2%} / "
-                f"{self.limits.max_risk_per_day_pct:.2%}"
+                f"Daily risk limit reached: {projected_daily_risk:.2%} / "
+                f"{self.limits.max_risk_per_day_pct:.2%} "
+                f"(current: {self.state.daily_risk_used_pct:.2%}, trade: {trade_risk_pct:.2%})"
             )
 
         # 4. Check max open positions

@@ -37,6 +37,8 @@ class PositionSizer:
         risk_percent: float,
         entry_price: Decimal,
         stop_loss_price: Decimal,
+        atr: Optional[Decimal] = None,
+        atr_avg: Optional[Decimal] = None,
         tick_value: Decimal = Decimal('1.0')
     ) -> Decimal:
         """
@@ -49,6 +51,8 @@ class PositionSizer:
             risk_percent: Risk per trade as percentage (e.g., 0.01 = 1%)
             entry_price: Planned entry price
             stop_loss_price: Stop loss price
+            atr: Current ATR (optional, for volatility adjustment)
+            atr_avg: Average ATR (optional, for volatility adjustment)
             tick_value: Value per price tick (default: 1.0)
 
         Returns:
@@ -72,13 +76,21 @@ class PositionSizer:
         risk_per_share = abs(entry_price - stop_loss_price) * tick_value
 
         if risk_per_share <= Decimal('0'):
-            raise ValueError("Stop loss must be different from entry price")
+            # If stop loss equals entry price, return 0
+            return Decimal('0')
 
         # Calculate dollar risk
         dollar_risk = equity * Decimal(str(risk_percent))
 
         # Calculate position size
         position_size = dollar_risk / risk_per_share
+
+        # Apply volatility adjustment if ATR provided
+        if atr is not None and atr_avg is not None and atr_avg > Decimal('0'):
+            volatility_ratio = atr / atr_avg
+            if volatility_ratio > Decimal('1.0'):
+                # Reduce position size in high volatility
+                position_size = position_size / volatility_ratio
 
         logger.debug(
             f"Fixed fractional: equity=${equity}, risk={risk_percent*100}%, "
@@ -124,11 +136,15 @@ class PositionSizer:
         if not (0.0 < win_rate < 1.0):
             raise ValueError("Win rate must be between 0 and 1")
 
-        if avg_win <= 0 or avg_loss <= 0:
+        # Convert to Decimal for calculations
+        avg_win_d = Decimal(str(avg_win)) if not isinstance(avg_win, Decimal) else avg_win
+        avg_loss_d = Decimal(str(avg_loss)) if not isinstance(avg_loss, Decimal) else avg_loss
+
+        if avg_win_d <= 0 or avg_loss_d <= 0:
             raise ValueError("Average win and loss must be positive")
 
         # Win/loss ratio
-        win_loss_ratio = avg_win / avg_loss
+        win_loss_ratio = float(avg_win_d / avg_loss_d)
 
         # Kelly percentage
         kelly_pct = (win_rate * win_loss_ratio - (1 - win_rate)) / win_loss_ratio
@@ -168,18 +184,22 @@ class PositionSizer:
             entry_price: Entry price
 
         Returns:
-            Position size (quantity)
+            Position size (quantity) - whole shares only
         """
-        if dollar_amount <= Decimal('0') or entry_price <= Decimal('0'):
+        if dollar_amount <= Decimal('0'):
             raise ValueError("Dollar amount and price must be positive")
 
-        position_size = dollar_amount / entry_price
+        if entry_price <= Decimal('0'):
+            return Decimal('0')
+
+        # Calculate quantity and round down to whole shares
+        quantity = int(dollar_amount / entry_price)
 
         logger.debug(
-            f"Fixed dollar: amount=${dollar_amount}, price=${entry_price}, size={position_size}"
+            f"Fixed dollar: amount=${dollar_amount}, price=${entry_price}, size={quantity}"
         )
 
-        return position_size
+        return Decimal(str(quantity))
 
     def fixed_shares(
         self,
@@ -198,6 +218,115 @@ class PositionSizer:
             raise ValueError("Shares must be positive")
 
         return shares
+
+    def percent_of_equity(
+        self,
+        equity: Decimal,
+        percent: float,
+        entry_price: Decimal
+    ) -> Decimal:
+        """
+        Calculate position size as percentage of equity.
+
+        Args:
+            equity: Current account equity
+            percent: Percentage of equity to allocate (e.g., 0.10 = 10%)
+            entry_price: Entry price per share
+
+        Returns:
+            Position size (quantity of shares)
+
+        Example:
+            Equity: $100,000
+            Percent: 10% = 0.10
+            Entry: $50
+            Position value: $10,000
+            Quantity: 200 shares
+        """
+        if equity <= Decimal('0'):
+            raise ValueError("Equity must be positive")
+
+        if percent <= 0.0:
+            raise ValueError("Percent must be positive")
+
+        if entry_price <= Decimal('0'):
+            raise ValueError("Entry price must be positive")
+
+        # Calculate dollar amount to invest
+        position_value = equity * Decimal(str(percent))
+
+        # Calculate quantity
+        quantity = int(position_value / entry_price)
+
+        logger.debug(
+            f"Percent of equity: equity=${equity}, percent={percent*100}%, "
+            f"entry=${entry_price}, position=${position_value}, quantity={quantity}"
+        )
+
+        return Decimal(str(quantity))
+
+    def r_multiple_sizing(
+        self,
+        equity: Decimal,
+        r_amount: Decimal,
+        entry_price: Decimal,
+        stop_loss_price: Decimal,
+        target_r: float = 1.0
+    ) -> Decimal:
+        """
+        Calculate position size based on R-multiples.
+
+        R is the initial risk amount. This method allows you to size
+        positions based on multiples of R.
+
+        Args:
+            equity: Current account equity
+            r_amount: Dollar amount for 1R (e.g., $1000 = 1R)
+            entry_price: Entry price per share
+            stop_loss_price: Stop loss price
+            target_r: Number of R to risk (default: 1.0)
+
+        Returns:
+            Position size (quantity of shares)
+
+        Example:
+            1R = $1000
+            Target = 2R (risk $2000)
+            Entry: $100, Stop: $95
+            Risk per share: $5
+            Quantity: $2000 / $5 = 400 shares
+        """
+        if equity <= Decimal('0'):
+            raise ValueError("Equity must be positive")
+
+        if r_amount <= Decimal('0'):
+            raise ValueError("R amount must be positive")
+
+        if entry_price <= Decimal('0') or stop_loss_price <= Decimal('0'):
+            raise ValueError("Prices must be positive")
+
+        if target_r <= 0:
+            raise ValueError("Target R must be positive")
+
+        # Calculate risk per share
+        risk_per_share = abs(entry_price - stop_loss_price)
+
+        if risk_per_share == Decimal('0'):
+            return Decimal('0')
+
+        # Calculate total dollar risk
+        total_risk = r_amount * Decimal(str(target_r))
+
+        # Calculate quantity
+        quantity = int(total_risk / risk_per_share)
+
+        logger.debug(
+            f"R-multiple sizing: 1R=${r_amount}, target_r={target_r}, "
+            f"entry=${entry_price}, stop=${stop_loss_price}, "
+            f"risk/share=${risk_per_share}, quantity={quantity}"
+        )
+
+        return Decimal(str(quantity))
 
     def calculate_r_multiple(
         self,

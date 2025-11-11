@@ -98,7 +98,7 @@ class ExecutionEngine:
             side = OrderSide.BUY if signal.signal == SignalType.BUY else OrderSide.SELL
 
             # Step 3: Check compliance
-            is_compliant, message = self.compliance.check_market_hours(signal.ticker)
+            is_compliant, status, message = self.compliance.check_market_hours(signal.ticker)
             if not is_compliant:
                 logger.warning(f"Compliance check failed: {message}")
                 if not dry_run:

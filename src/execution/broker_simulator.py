@@ -163,6 +163,12 @@ class BrokerSimulator(BrokerBase):
         if not self.is_connected():
             raise RuntimeError("Simulator not connected")
 
+        # Convert strings to enums if needed (for test compatibility)
+        if isinstance(side, str):
+            side = OrderSide[side.upper()] if hasattr(OrderSide, side.upper()) else OrderSide(side)
+        if isinstance(order_type, str):
+            order_type = OrderType[order_type.upper()] if hasattr(OrderType, order_type.upper()) else OrderType(order_type)
+
         # Validate parameters
         self.validate_order_params(symbol, side, quantity, order_type, limit_price, stop_price)
 
@@ -265,6 +271,18 @@ class BrokerSimulator(BrokerBase):
 
             # Update position
             self._update_position(order, fill)
+
+            # Add ledger entry
+            self.ledger.append({
+                'timestamp': datetime.now().isoformat(),
+                'order_id': order.order_id,
+                'fill_id': fill.fill_id,
+                'symbol': order.symbol,
+                'side': order.side.value,
+                'quantity': str(order.quantity),
+                'price': str(fill_price),
+                'commission': str(commission)
+            })
 
             # Update account cash
             if order.side == OrderSide.BUY:

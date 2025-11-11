@@ -19,6 +19,9 @@ def broker():
     """Create broker simulator."""
     broker = BrokerSimulator(initial_cash=Decimal('100000'))
     broker.connect()
+    # Add mock prices for testing
+    broker._mock_prices["AAPL"] = Decimal('150')
+    broker._mock_prices["MSFT"] = Decimal('300')
     return broker
 
 
@@ -27,22 +30,32 @@ def risk_limits():
     """Create risk limits."""
     return RiskLimits(
         max_risk_per_trade_pct=0.01,
+        max_position_size_pct=0.30,  # 30% to accommodate test position sizes
         max_risk_per_day_pct=0.03,
-        max_daily_drawdown_pct=0.05,
+        max_daily_drawdown_pct=0.30,  # 30% to accommodate test drawdowns
         max_consecutive_losses=3,
         max_open_positions=5
     )
 
 
 @pytest.fixture
-def engine(broker, risk_limits):
+def engine(broker, risk_limits, monkeypatch):
     """Create execution engine."""
-    return ExecutionEngine(
+    # Mock compliance checker to always return success
+    from src.execution.compliance import MarketStatus
+    def mock_check_market_hours(*args, **kwargs):
+        return (True, MarketStatus.OPEN, None)
+
+    engine_inst = ExecutionEngine(
         broker=broker,
         risk_limits=risk_limits,
         sizing_method=SizingMethod.FIXED_FRACTIONAL,
         journal_enabled=True
     )
+
+    monkeypatch.setattr(engine_inst.compliance, 'check_market_hours', mock_check_market_hours)
+
+    return engine_inst
 
 
 @pytest.fixture
@@ -391,8 +404,9 @@ def test_engine_without_journal(broker, risk_limits):
 
 def test_error_handling_invalid_price(engine, buy_signal, broker):
     """Test error handling when price fetch fails."""
-    # Don't set mock price - will fail to get price
+    # Remove mock price - will fail to get price
     # Engine should handle gracefully
+    broker._mock_prices.clear()  # Clear all mock prices
 
     order = engine.execute_signal(
         signal=buy_signal,

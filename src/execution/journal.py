@@ -37,6 +37,7 @@ class TradeJournal:
         self.journal_dir.mkdir(parents=True, exist_ok=True)
 
         self.trades: List[Dict] = []
+        self.orders: List[Order] = []  # Keep track of orders separately for tests
         self.date_str = datetime.now().strftime("%Y-%m-%d")
 
         logger.info(f"Trade journal initialized: {self.journal_dir}")
@@ -55,6 +56,7 @@ class TradeJournal:
         }
 
         self.trades.append(entry)
+        self.orders.append(order)  # Keep order objects for easy access
 
         # Append to CSV
         self._append_to_csv('orders', entry['data'])
