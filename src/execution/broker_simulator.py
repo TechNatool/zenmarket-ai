@@ -49,7 +49,7 @@ class BrokerSimulator(BrokerBase):
             commission_per_trade: Fixed commission per trade
             ledger_dir: Directory to save ledger (default: data/journal)
         """
-        super().__init__("simulator")
+        super().__init__("Simulator")
 
         self.config = get_config()
 
@@ -63,6 +63,8 @@ class BrokerSimulator(BrokerBase):
         self._positions: Dict[str, Position] = {}
         self._orders: Dict[str, Order] = {}
         self._fills: List[Fill] = []
+        self._mock_prices: Dict[str, Decimal] = {}  # For testing
+        self.ledger: List[Dict] = []  # Transaction history
 
         # Configuration
         self.slippage_bps = slippage_bps / 10000.0  # Convert to decimal
@@ -164,6 +166,12 @@ class BrokerSimulator(BrokerBase):
         # Validate parameters
         self.validate_order_params(symbol, side, quantity, order_type, limit_price, stop_price)
 
+        # Extract metadata from kwargs
+        metadata = {}
+        for key, value in kwargs.items():
+            if key not in ['time_in_force', 'signal_confidence']:
+                metadata[key] = value
+
         # Create order
         order = Order(
             order_id=str(uuid.uuid4()),
@@ -177,7 +185,8 @@ class BrokerSimulator(BrokerBase):
             take_profit=take_profit,
             strategy=strategy,
             time_in_force=kwargs.get('time_in_force', TimeInForce.DAY),
-            signal_confidence=kwargs.get('signal_confidence')
+            signal_confidence=kwargs.get('signal_confidence'),
+            metadata=metadata
         )
 
         order.status = OrderStatus.SUBMITTED
@@ -211,13 +220,26 @@ class BrokerSimulator(BrokerBase):
             # Calculate commission
             commission = self.commission_per_trade
 
+            # Check if selling - verify we have position
+            if order.side == OrderSide.SELL:
+                if order.symbol not in self._positions or self._positions[order.symbol].quantity < order.quantity:
+                    current_qty = self._positions[order.symbol].quantity if order.symbol in self._positions else Decimal('0')
+                    order.status = OrderStatus.REJECTED
+                    reason = f"Insufficient position: have {current_qty}, trying to sell {order.quantity}"
+                    order.notes = reason
+                    order.rejection_reason = reason
+                    self.logger.error(reason)
+                    return
+
             # Check if enough cash
             if order.side == OrderSide.BUY:
                 required_cash = fill_price * order.quantity + commission
                 if required_cash > self._account.cash:
                     order.status = OrderStatus.REJECTED
-                    order.notes = f"Insufficient cash: need ${required_cash}, have ${self._account.cash}"
-                    self.logger.error(order.notes)
+                    reason = f"Insufficient funds: need ${required_cash}, have ${self._account.cash}"
+                    order.notes = reason
+                    order.rejection_reason = reason
+                    self.logger.error(reason)
                     return
 
             # Create fill
@@ -232,6 +254,7 @@ class BrokerSimulator(BrokerBase):
             )
 
             self._fills.append(fill)
+            order.fills.append(fill)
 
             # Update order
             order.status = OrderStatus.FILLED
@@ -256,7 +279,9 @@ class BrokerSimulator(BrokerBase):
 
         except Exception as e:
             order.status = OrderStatus.REJECTED
-            order.notes = f"Execution error: {str(e)}"
+            reason = f"Execution error: {str(e)}"
+            order.notes = reason
+            order.rejection_reason = reason
             self.logger.error(f"Error executing order {order.order_id}: {e}", exc_info=True)
 
     def _update_position(self, order: Order, fill: Fill):
@@ -370,7 +395,11 @@ class BrokerSimulator(BrokerBase):
         return fills
 
     def get_current_price(self, symbol: str) -> Decimal:
-        """Get current price from yfinance."""
+        """Get current price from yfinance or mock prices."""
+        # Check for mock price first (for testing)
+        if symbol in self._mock_prices:
+            return self._mock_prices[symbol]
+
         try:
             ticker = yf.Ticker(symbol)
             data = ticker.history(period="1d", interval="1m")

@@ -17,7 +17,6 @@ from .execution.order_types import OrderType
 from .advisor.signal_generator import SignalGenerator
 from .advisor.indicators import IndicatorCalculator
 from .utils.logger import get_logger
-from .utils.config_loader import load_config
 
 logger = get_logger(__name__)
 

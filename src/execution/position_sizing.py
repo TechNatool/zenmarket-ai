@@ -94,6 +94,7 @@ class PositionSizer:
         win_rate: float,
         avg_win: float,
         avg_loss: float,
+        entry_price: Optional[Decimal] = None,
         kelly_fraction: float = 0.25
     ) -> Decimal:
         """
@@ -111,10 +112,11 @@ class PositionSizer:
             win_rate: Historical win rate (0.0 to 1.0)
             avg_win: Average winning trade size (absolute)
             avg_loss: Average losing trade size (absolute, positive)
+            entry_price: Entry price per share (if provided, returns quantity, else returns dollar amount)
             kelly_fraction: Fraction of Kelly to use (default: 0.25 for quarter-Kelly)
 
         Returns:
-            Dollar amount to risk
+            Quantity of shares (if entry_price provided) or dollar amount to risk
 
         Note:
             Full Kelly can be aggressive. quarter-Kelly (0.25) is more conservative.
@@ -145,6 +147,11 @@ class PositionSizer:
             f"avg_win={avg_win}, avg_loss={avg_loss}, "
             f"kelly%={kelly_pct*100:.2f}%, position=${position_value}"
         )
+
+        # Convert to quantity if entry_price provided
+        if entry_price is not None and entry_price > Decimal('0'):
+            quantity = int(position_value / entry_price)
+            return Decimal(str(quantity))
 
         return position_value
 

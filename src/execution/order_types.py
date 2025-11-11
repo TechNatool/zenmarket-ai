@@ -5,7 +5,7 @@ Order types and data structures for execution system.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from decimal import Decimal
 
 
@@ -71,11 +71,21 @@ class Order:
     filled_quantity: Decimal = Decimal('0')
     avg_fill_price: Optional[Decimal] = None
     commission: Decimal = Decimal('0')
+    fills: List['Fill'] = field(default_factory=list)
+
+    # Rejection details
+    rejection_reason: Optional[str] = None
 
     # Metadata
     strategy: Optional[str] = None
     signal_confidence: Optional[float] = None
     notes: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def filled_price(self) -> Optional[Decimal]:
+        """Alias for avg_fill_price for compatibility."""
+        return self.avg_fill_price
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -202,6 +212,11 @@ class Account:
             self.peak_equity = self.equity
 
         self.margin_available = self.cash - self.margin_used
+
+    @property
+    def buying_power(self) -> Decimal:
+        """Alias for cash - amount available to purchase securities."""
+        return self.cash
 
     def update_equity(self, new_equity: Decimal):
         """Update equity and calculate metrics."""
