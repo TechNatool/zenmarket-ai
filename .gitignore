@@ -64,6 +64,7 @@ data/logs/
 
 # === Data Cache ===
 data/cache/
+data/journal/
 data/*.csv
 data/*.json
 
