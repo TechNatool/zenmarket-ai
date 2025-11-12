@@ -52,8 +52,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
+          # Optional dependencies for type checking
+          pip install scipy reportlab tabulate
+          pip install ib-insync || echo "ib-insync not available on this platform"
+          # Skip MetaTrader5 on Linux
+          if [ "$RUNNER_OS" != "Linux" ]; then
+            pip install MetaTrader5 || echo "MetaTrader5 not available"
+          fi
 
       - name: Run mypy
         run: mypy src
@@ -78,8 +85,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
+          # Install dev dependencies
           pip install -e ".[dev]"
+          # Install optional platform-specific dependencies (allow failures)
+          pip install scipy reportlab tabulate
+          # IBKR only works on non-Windows or Python >= 3.11
+          pip install ib-insync || echo "ib-insync not available on this platform"
+          # MetaTrader5 only on Windows - skip on Linux
+          if [ "$RUNNER_OS" != "Linux" ]; then
+            pip install MetaTrader5 || echo "MetaTrader5 not available"
+          fi
 
       - name: Run tests with coverage
         run: |
