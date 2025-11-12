@@ -39,6 +39,13 @@ dependencies = [
     "python-dateutil>=2.8.2",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
+    # Backtesting & Performance Analysis
+    "scipy>=1.11.0",
+    "reportlab>=4.0.0",
+    "tabulate>=0.9.0",
+    # Broker Integration (optional, install separately for production)
+    "ib-insync>=0.9.86; platform_system != 'Windows' or python_version >= '3.11'",
+    "MetaTrader5>=5.0.45; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]
@@ -76,11 +83,17 @@ dev = [
     # Pre-commit
     "pre-commit>=3.6.0",
 
+    # Interactive development
+    "jupyter>=1.0.0",
+    "ipykernel>=6.29.0",
+    "notebook>=7.0.0",
+
     # Type stubs
     "pandas-stubs>=2.1.4.231227",
     "types-pytz>=2024.1.0.20240203",
     "types-requests>=2.31.0.20240106",
     "types-python-dateutil>=2.8.19.20240106",
+    "types-tabulate>=0.9.0",
 ]
 
 [project.scripts]
