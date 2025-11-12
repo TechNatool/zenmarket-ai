@@ -1,6 +1,5 @@
 """Tests for BacktestBroker."""
 
-from datetime import datetime
 from decimal import Decimal
 
 import pandas as pd
@@ -14,7 +13,7 @@ from src.execution.order_types import OrderSide, OrderType
 def sample_historical_data():
     """Create sample historical data for testing."""
     dates = pd.date_range("2024-01-01", periods=10, freq="D")
-    data = {
+    return {
         "AAPL": pd.DataFrame(
             {
                 "Open": [150.0 + i for i in range(10)],
@@ -26,7 +25,6 @@ def sample_historical_data():
             index=dates,
         )
     }
-    return data
 
 
 @pytest.fixture
@@ -52,7 +50,7 @@ def test_connect_disconnect(backtest_broker):
     """Test connection methods."""
     assert backtest_broker.connect() is True
     assert backtest_broker.is_connected() is True
-    
+
     backtest_broker.disconnect()
     assert backtest_broker.is_connected() is False
 
@@ -69,9 +67,9 @@ def test_set_current_bar(backtest_broker, sample_historical_data):
             "Volume": 1000000,
         }
     }
-    
+
     backtest_broker.set_current_bar(timestamp, bar_data)
-    
+
     assert backtest_broker.current_timestamp == timestamp
     assert backtest_broker._current_bar == bar_data
 
@@ -79,7 +77,7 @@ def test_set_current_bar(backtest_broker, sample_historical_data):
 def test_place_market_order(backtest_broker, sample_historical_data):
     """Test placing a market order."""
     backtest_broker.connect()
-    
+
     # Set current bar
     timestamp = sample_historical_data["AAPL"].index[0]
     bar_data = {
@@ -92,7 +90,7 @@ def test_place_market_order(backtest_broker, sample_historical_data):
         }
     }
     backtest_broker.set_current_bar(timestamp, bar_data)
-    
+
     # Place buy order
     order = backtest_broker.place_order(
         symbol="AAPL",
@@ -100,12 +98,12 @@ def test_place_market_order(backtest_broker, sample_historical_data):
         quantity=Decimal("10"),
         order_type=OrderType.MARKET,
     )
-    
+
     assert order is not None
     assert order.symbol == "AAPL"
     assert order.side == OrderSide.BUY
     assert order.quantity == Decimal("10")
-    
+
     # Check position was created
     position = backtest_broker.get_position("AAPL")
     assert position is not None
@@ -115,9 +113,9 @@ def test_place_market_order(backtest_broker, sample_historical_data):
 def test_account_updates_after_trade(backtest_broker, sample_historical_data):
     """Test account equity updates after trade."""
     backtest_broker.connect()
-    
+
     initial_cash = backtest_broker._account.cash
-    
+
     # Set current bar
     timestamp = sample_historical_data["AAPL"].index[0]
     bar_data = {
@@ -130,7 +128,7 @@ def test_account_updates_after_trade(backtest_broker, sample_historical_data):
         }
     }
     backtest_broker.set_current_bar(timestamp, bar_data)
-    
+
     # Place buy order
     backtest_broker.place_order(
         symbol="AAPL",
@@ -138,10 +136,10 @@ def test_account_updates_after_trade(backtest_broker, sample_historical_data):
         quantity=Decimal("10"),
         order_type=OrderType.MARKET,
     )
-    
+
     # Cash should decrease (price * quantity + commission + slippage)
     assert backtest_broker._account.cash < initial_cash
-    
+
     # Equity should include position value
     assert backtest_broker._account.equity > 0
 
@@ -149,7 +147,7 @@ def test_account_updates_after_trade(backtest_broker, sample_historical_data):
 def test_insufficient_funds(backtest_broker, sample_historical_data):
     """Test order rejection with insufficient funds."""
     backtest_broker.connect()
-    
+
     # Set current bar
     timestamp = sample_historical_data["AAPL"].index[0]
     bar_data = {
@@ -162,7 +160,7 @@ def test_insufficient_funds(backtest_broker, sample_historical_data):
         }
     }
     backtest_broker.set_current_bar(timestamp, bar_data)
-    
+
     # Try to buy more than we can afford
     order = backtest_broker.place_order(
         symbol="AAPL",
@@ -170,7 +168,7 @@ def test_insufficient_funds(backtest_broker, sample_historical_data):
         quantity=Decimal("10000"),  # Way too many shares
         order_type=OrderType.MARKET,
     )
-    
+
     # Order should be rejected
     from src.execution.order_types import OrderStatus
     assert order.status == OrderStatus.REJECTED
