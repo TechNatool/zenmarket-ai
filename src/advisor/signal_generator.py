@@ -3,18 +3,19 @@ Signal generator for AI Trading Advisor.
 Generates trading signals (BUY/SELL/HOLD) based on technical indicators.
 """
 
-from typing import Dict, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+from src.utils.logger import get_logger
+
 from .indicators import TechnicalIndicators
-from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class SignalType(Enum):
     """Trading signal types."""
+
     BUY = "BUY"
     SELL = "SELL"
     HOLD = "HOLD"
@@ -27,36 +28,31 @@ class TradingSignal:
     ticker: str
     signal: SignalType
     confidence: float  # 0.0 to 1.0
-    reasons: List[str]
+    reasons: list[str]
     indicators: TechnicalIndicators
 
     def get_emoji(self) -> str:
         """Get emoji for signal."""
-        emojis = {
-            SignalType.BUY: "📈",
-            SignalType.SELL: "📉",
-            SignalType.HOLD: "⚖️"
-        }
+        emojis = {SignalType.BUY: "📈", SignalType.SELL: "📉", SignalType.HOLD: "⚖️"}
         return emojis.get(self.signal, "➖")
 
     def get_trend_description(self) -> str:
         """Get trend description."""
         if self.indicators.ma_20 > self.indicators.ma_50:
             return "Haussière" if self.signal == SignalType.BUY else "Haussière (prudence)"
-        elif self.indicators.ma_20 < self.indicators.ma_50:
+        if self.indicators.ma_20 < self.indicators.ma_50:
             return "Baissière" if self.signal == SignalType.SELL else "Baissière (prudence)"
-        else:
-            return "Neutre"
+        return "Neutre"
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            'ticker': self.ticker,
-            'signal': self.signal.value,
-            'confidence': self.confidence,
-            'reasons': self.reasons,
-            'indicators': self.indicators.to_dict(),
-            'trend': self.get_trend_description()
+            "ticker": self.ticker,
+            "signal": self.signal.value,
+            "confidence": self.confidence,
+            "reasons": self.reasons,
+            "indicators": self.indicators.to_dict(),
+            "trend": self.get_trend_description(),
         }
 
 
@@ -68,8 +64,8 @@ class SignalGenerator:
         rsi_overbought: float = 70.0,
         rsi_oversold: float = 30.0,
         rsi_strong_overbought: float = 80.0,
-        rsi_strong_oversold: float = 20.0
-    ):
+        rsi_strong_oversold: float = 20.0,
+    ) -> None:
         """
         Initialize signal generator.
 
@@ -108,10 +104,14 @@ class SignalGenerator:
 
         if ma_cross_bullish:
             signal_points += 2
-            reasons.append(f"Croisement haussier MM20 ({indicators.ma_20:.2f}) > MM50 ({indicators.ma_50:.2f})")
+            reasons.append(
+                f"Croisement haussier MM20 ({indicators.ma_20:.2f}) > MM50 ({indicators.ma_50:.2f})"
+            )
         elif ma_cross_bearish:
             signal_points -= 2
-            reasons.append(f"Croisement baissier MM20 ({indicators.ma_20:.2f}) < MM50 ({indicators.ma_50:.2f})")
+            reasons.append(
+                f"Croisement baissier MM20 ({indicators.ma_20:.2f}) < MM50 ({indicators.ma_50:.2f})"
+            )
         else:
             reasons.append("MAs en convergence")
 
@@ -124,7 +124,9 @@ class SignalGenerator:
             reasons.append(f"RSI survendu ({indicators.rsi:.1f} < {self.rsi_oversold})")
         elif indicators.rsi > self.rsi_strong_overbought:
             signal_points -= 3
-            reasons.append(f"RSI très suracheté ({indicators.rsi:.1f} > {self.rsi_strong_overbought})")
+            reasons.append(
+                f"RSI très suracheté ({indicators.rsi:.1f} > {self.rsi_strong_overbought})"
+            )
         elif indicators.rsi > self.rsi_overbought:
             signal_points -= 1
             reasons.append(f"RSI suracheté ({indicators.rsi:.1f} > {self.rsi_overbought})")
@@ -178,7 +180,7 @@ class SignalGenerator:
             signal=signal,
             confidence=confidence,
             reasons=reasons,
-            indicators=indicators
+            indicators=indicators,
         )
 
         logger.info(
@@ -189,9 +191,8 @@ class SignalGenerator:
         return trading_signal
 
     def generate_signals_batch(
-        self,
-        indicators_list: List[TechnicalIndicators]
-    ) -> List[TradingSignal]:
+        self, indicators_list: list[TechnicalIndicators]
+    ) -> list[TradingSignal]:
         """
         Generate signals for multiple tickers.
 
@@ -208,19 +209,21 @@ class SignalGenerator:
                 signal = self.generate_signal(indicators)
                 signals.append(signal)
             except Exception as e:
-                logger.error(f"Error generating signal for {indicators.ticker}: {e}")
+                logger.exception(f"Error generating signal for {indicators.ticker}: {e}")
                 # Create a HOLD signal as fallback
-                signals.append(TradingSignal(
-                    ticker=indicators.ticker,
-                    signal=SignalType.HOLD,
-                    confidence=0.0,
-                    reasons=["Erreur de calcul"],
-                    indicators=indicators
-                ))
+                signals.append(
+                    TradingSignal(
+                        ticker=indicators.ticker,
+                        signal=SignalType.HOLD,
+                        confidence=0.0,
+                        reasons=["Erreur de calcul"],
+                        indicators=indicators,
+                    )
+                )
 
         return signals
 
-    def get_market_bias(self, signals: List[TradingSignal]) -> Tuple[str, float]:
+    def get_market_bias(self, signals: list[TradingSignal]) -> tuple[str, float]:
         """
         Calculate overall market bias from multiple signals.
 
@@ -255,7 +258,7 @@ class SignalGenerator:
 
         return bias, avg_score
 
-    def get_signal_summary(self, signals: List[TradingSignal]) -> Dict:
+    def get_signal_summary(self, signals: list[TradingSignal]) -> dict:
         """
         Get summary statistics of signals.
 
@@ -273,12 +276,12 @@ class SignalGenerator:
         avg_confidence = sum(s.confidence for s in signals) / total if total > 0 else 0
 
         return {
-            'total': total,
-            'buy': buy_count,
-            'sell': sell_count,
-            'hold': hold_count,
-            'buy_pct': (buy_count / total * 100) if total > 0 else 0,
-            'sell_pct': (sell_count / total * 100) if total > 0 else 0,
-            'hold_pct': (hold_count / total * 100) if total > 0 else 0,
-            'avg_confidence': avg_confidence
+            "total": total,
+            "buy": buy_count,
+            "sell": sell_count,
+            "hold": hold_count,
+            "buy_pct": (buy_count / total * 100) if total > 0 else 0,
+            "sell_pct": (sell_count / total * 100) if total > 0 else 0,
+            "hold_pct": (hold_count / total * 100) if total > 0 else 0,
+            "avg_confidence": avg_confidence,
         }

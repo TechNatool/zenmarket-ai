@@ -3,21 +3,28 @@ Simulated broker for paper trading.
 Provides realistic order execution with slippage, fees, and latency simulation.
 """
 
+import json
 import uuid
-import yfinance as yf
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-import json
+
+import yfinance as yf
+
+from src.utils.config_loader import get_config
+from src.utils.logger import get_logger
 
 from .broker_base import BrokerBase
 from .order_types import (
-    Order, Position, Fill, Account,
-    OrderSide, OrderType, OrderStatus, TimeInForce
+    Account,
+    Fill,
+    Order,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    Position,
+    TimeInForce,
 )
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
 
 logger = get_logger(__name__)
 
@@ -35,11 +42,11 @@ class BrokerSimulator(BrokerBase):
 
     def __init__(
         self,
-        initial_cash: Decimal = Decimal('100000'),
+        initial_cash: Decimal = Decimal("100000"),
         slippage_bps: float = 1.5,
-        commission_per_trade: Decimal = Decimal('2.0'),
-        ledger_dir: Optional[Path] = None
-    ):
+        commission_per_trade: Decimal = Decimal("2.0"),
+        ledger_dir: Path | None = None,
+    ) -> None:
         """
         Initialize simulator.
 
@@ -54,17 +61,14 @@ class BrokerSimulator(BrokerBase):
         self.config = get_config()
 
         # Account state
-        self._account = Account(
-            equity=initial_cash,
-            cash=initial_cash
-        )
+        self._account = Account(equity=initial_cash, cash=initial_cash)
 
         # Trading state
-        self._positions: Dict[str, Position] = {}
-        self._orders: Dict[str, Order] = {}
-        self._fills: List[Fill] = []
-        self._mock_prices: Dict[str, Decimal] = {}  # For testing
-        self.ledger: List[Dict] = []  # Transaction history
+        self._positions: dict[str, Position] = {}
+        self._orders: dict[str, Order] = {}
+        self._fills: list[Fill] = []
+        self._mock_prices: dict[str, Decimal] = {}  # For testing
+        self.ledger: list[dict] = []  # Transaction history
 
         # Configuration
         self.slippage_bps = slippage_bps / 10000.0  # Convert to decimal
@@ -91,7 +95,7 @@ class BrokerSimulator(BrokerBase):
         self.logger.info("Simulator connected")
         return True
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Disconnect from simulator."""
         if self._connected:
             self._save_ledger()
@@ -105,7 +109,7 @@ class BrokerSimulator(BrokerBase):
     def get_account(self) -> Account:
         """Get account state."""
         # Update equity with current positions
-        total_position_value = Decimal('0')
+        total_position_value = Decimal("0")
 
         for symbol, position in self._positions.items():
             try:
@@ -120,7 +124,7 @@ class BrokerSimulator(BrokerBase):
 
         return self._account
 
-    def get_positions(self) -> List[Position]:
+    def get_positions(self) -> list[Position]:
         """Get all positions."""
         # Update positions with current prices
         for symbol, position in self._positions.items():
@@ -132,7 +136,7 @@ class BrokerSimulator(BrokerBase):
 
         return list(self._positions.values())
 
-    def get_position(self, symbol: str) -> Optional[Position]:
+    def get_position(self, symbol: str) -> Position | None:
         """Get position for symbol."""
         position = self._positions.get(symbol)
 
@@ -151,12 +155,12 @@ class BrokerSimulator(BrokerBase):
         side: OrderSide,
         quantity: Decimal,
         order_type: OrderType = OrderType.MARKET,
-        limit_price: Optional[Decimal] = None,
-        stop_price: Optional[Decimal] = None,
-        stop_loss: Optional[Decimal] = None,
-        take_profit: Optional[Decimal] = None,
-        strategy: Optional[str] = None,
-        **kwargs
+        limit_price: Decimal | None = None,
+        stop_price: Decimal | None = None,
+        stop_loss: Decimal | None = None,
+        take_profit: Decimal | None = None,
+        strategy: str | None = None,
+        **kwargs,
     ) -> Order:
         """Place an order in simulator."""
 
@@ -167,7 +171,11 @@ class BrokerSimulator(BrokerBase):
         if isinstance(side, str):
             side = OrderSide[side.upper()] if hasattr(OrderSide, side.upper()) else OrderSide(side)
         if isinstance(order_type, str):
-            order_type = OrderType[order_type.upper()] if hasattr(OrderType, order_type.upper()) else OrderType(order_type)
+            order_type = (
+                OrderType[order_type.upper()]
+                if hasattr(OrderType, order_type.upper())
+                else OrderType(order_type)
+            )
 
         # Validate parameters
         self.validate_order_params(symbol, side, quantity, order_type, limit_price, stop_price)
@@ -175,7 +183,7 @@ class BrokerSimulator(BrokerBase):
         # Extract metadata from kwargs
         metadata = {}
         for key, value in kwargs.items():
-            if key not in ['time_in_force', 'signal_confidence']:
+            if key not in ["time_in_force", "signal_confidence"]:
                 metadata[key] = value
 
         # Create order
@@ -190,9 +198,9 @@ class BrokerSimulator(BrokerBase):
             stop_loss=stop_loss,
             take_profit=take_profit,
             strategy=strategy,
-            time_in_force=kwargs.get('time_in_force', TimeInForce.DAY),
-            signal_confidence=kwargs.get('signal_confidence'),
-            metadata=metadata
+            time_in_force=kwargs.get("time_in_force", TimeInForce.DAY),
+            signal_confidence=kwargs.get("signal_confidence"),
+            metadata=metadata,
         )
 
         order.status = OrderStatus.SUBMITTED
@@ -210,7 +218,7 @@ class BrokerSimulator(BrokerBase):
 
         return order
 
-    def _execute_market_order(self, order: Order):
+    def _execute_market_order(self, order: Order) -> None:
         """Execute market order immediately."""
         try:
             # Get current price
@@ -228,8 +236,15 @@ class BrokerSimulator(BrokerBase):
 
             # Check if selling - verify we have position
             if order.side == OrderSide.SELL:
-                if order.symbol not in self._positions or self._positions[order.symbol].quantity < order.quantity:
-                    current_qty = self._positions[order.symbol].quantity if order.symbol in self._positions else Decimal('0')
+                if (
+                    order.symbol not in self._positions
+                    or self._positions[order.symbol].quantity < order.quantity
+                ):
+                    current_qty = (
+                        self._positions[order.symbol].quantity
+                        if order.symbol in self._positions
+                        else Decimal("0")
+                    )
                     order.status = OrderStatus.REJECTED
                     reason = f"Insufficient position: have {current_qty}, trying to sell {order.quantity}"
                     order.notes = reason
@@ -242,7 +257,9 @@ class BrokerSimulator(BrokerBase):
                 required_cash = fill_price * order.quantity + commission
                 if required_cash > self._account.cash:
                     order.status = OrderStatus.REJECTED
-                    reason = f"Insufficient funds: need ${required_cash}, have ${self._account.cash}"
+                    reason = (
+                        f"Insufficient funds: need ${required_cash}, have ${self._account.cash}"
+                    )
                     order.notes = reason
                     order.rejection_reason = reason
                     self.logger.error(reason)
@@ -256,7 +273,7 @@ class BrokerSimulator(BrokerBase):
                 side=order.side,
                 quantity=order.quantity,
                 price=fill_price,
-                commission=commission
+                commission=commission,
             )
 
             self._fills.append(fill)
@@ -273,22 +290,24 @@ class BrokerSimulator(BrokerBase):
             self._update_position(order, fill)
 
             # Add ledger entry
-            self.ledger.append({
-                'timestamp': datetime.now().isoformat(),
-                'order_id': order.order_id,
-                'fill_id': fill.fill_id,
-                'symbol': order.symbol,
-                'side': order.side.value,
-                'quantity': str(order.quantity),
-                'price': str(fill_price),
-                'commission': str(commission)
-            })
+            self.ledger.append(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "order_id": order.order_id,
+                    "fill_id": fill.fill_id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "quantity": str(order.quantity),
+                    "price": str(fill_price),
+                    "commission": str(commission),
+                }
+            )
 
             # Update account cash
             if order.side == OrderSide.BUY:
-                self._account.cash -= (fill_price * order.quantity + commission)
+                self._account.cash -= fill_price * order.quantity + commission
             else:
-                self._account.cash += (fill_price * order.quantity - commission)
+                self._account.cash += fill_price * order.quantity - commission
 
             self.logger.info(
                 f"Order filled: {order.order_id} | {order.symbol} {order.side.value} "
@@ -297,12 +316,12 @@ class BrokerSimulator(BrokerBase):
 
         except Exception as e:
             order.status = OrderStatus.REJECTED
-            reason = f"Execution error: {str(e)}"
+            reason = f"Execution error: {e!s}"
             order.notes = reason
             order.rejection_reason = reason
             self.logger.error(f"Error executing order {order.order_id}: {e}", exc_info=True)
 
-    def _update_position(self, order: Order, fill: Fill):
+    def _update_position(self, order: Order, fill: Fill) -> None:
         """Update position after fill."""
         symbol = order.symbol
 
@@ -310,10 +329,10 @@ class BrokerSimulator(BrokerBase):
             # New position
             self._positions[symbol] = Position(
                 symbol=symbol,
-                quantity=Decimal('0'),
-                avg_entry_price=Decimal('0'),
+                quantity=Decimal("0"),
+                avg_entry_price=Decimal("0"),
                 current_price=fill.price,
-                strategy=order.strategy
+                strategy=order.strategy,
             )
 
         position = self._positions[symbol]
@@ -321,39 +340,43 @@ class BrokerSimulator(BrokerBase):
         if order.side == OrderSide.BUY:
             # Adding to long or reducing short
             new_quantity = position.quantity + fill.quantity
-            if position.quantity >= Decimal('0'):  # Long or flat
+            if position.quantity >= Decimal("0"):  # Long or flat
                 # Averaging up/down
-                total_cost = (position.avg_entry_price * position.quantity +
-                             fill.price * fill.quantity)
-                position.avg_entry_price = total_cost / new_quantity if new_quantity > Decimal('0') else Decimal('0')
-            else:  # Closing short
-                if new_quantity == Decimal('0'):
-                    # Position fully closed
-                    realized_pnl = (position.avg_entry_price - fill.price) * fill.quantity
-                    position.realized_pnl += realized_pnl
-                    self._account.total_pnl += realized_pnl
+                total_cost = (
+                    position.avg_entry_price * position.quantity + fill.price * fill.quantity
+                )
+                position.avg_entry_price = (
+                    total_cost / new_quantity if new_quantity > Decimal("0") else Decimal("0")
+                )
+            elif new_quantity == Decimal("0"):
+                # Position fully closed
+                realized_pnl = (position.avg_entry_price - fill.price) * fill.quantity
+                position.realized_pnl += realized_pnl
+                self._account.total_pnl += realized_pnl
 
             position.quantity = new_quantity
 
         else:  # SELL
             # Adding to short or reducing long
             new_quantity = position.quantity - fill.quantity
-            if position.quantity <= Decimal('0'):  # Short or flat
+            if position.quantity <= Decimal("0"):  # Short or flat
                 # Averaging down/up
-                total_cost = (position.avg_entry_price * abs(position.quantity) +
-                             fill.price * fill.quantity)
-                position.avg_entry_price = total_cost / abs(new_quantity) if new_quantity != Decimal('0') else Decimal('0')
-            else:  # Closing long
-                if new_quantity == Decimal('0'):
-                    # Position fully closed
-                    realized_pnl = (fill.price - position.avg_entry_price) * fill.quantity
-                    position.realized_pnl += realized_pnl
-                    self._account.total_pnl += realized_pnl
+                total_cost = (
+                    position.avg_entry_price * abs(position.quantity) + fill.price * fill.quantity
+                )
+                position.avg_entry_price = (
+                    total_cost / abs(new_quantity) if new_quantity != Decimal("0") else Decimal("0")
+                )
+            elif new_quantity == Decimal("0"):
+                # Position fully closed
+                realized_pnl = (fill.price - position.avg_entry_price) * fill.quantity
+                position.realized_pnl += realized_pnl
+                self._account.total_pnl += realized_pnl
 
             position.quantity = new_quantity
 
         # Remove position if flat
-        if position.quantity == Decimal('0'):
+        if position.quantity == Decimal("0"):
             del self._positions[symbol]
 
         position.update_price(fill.price)
@@ -376,15 +399,13 @@ class BrokerSimulator(BrokerBase):
         self.logger.info(f"Order cancelled: {order_id}")
         return True
 
-    def get_order(self, order_id: str) -> Optional[Order]:
+    def get_order(self, order_id: str) -> Order | None:
         """Get order by ID."""
         return self._orders.get(order_id)
 
     def get_orders(
-        self,
-        symbol: Optional[str] = None,
-        status: Optional[OrderStatus] = None
-    ) -> List[Order]:
+        self, symbol: str | None = None, status: OrderStatus | None = None
+    ) -> list[Order]:
         """Get orders with optional filters."""
         orders = list(self._orders.values())
 
@@ -396,11 +417,7 @@ class BrokerSimulator(BrokerBase):
 
         return orders
 
-    def get_fills(
-        self,
-        symbol: Optional[str] = None,
-        order_id: Optional[str] = None
-    ) -> List[Fill]:
+    def get_fills(self, symbol: str | None = None, order_id: str | None = None) -> list[Fill]:
         """Get fills with optional filters."""
         fills = self._fills
 
@@ -425,39 +442,39 @@ class BrokerSimulator(BrokerBase):
             if data.empty:
                 raise ValueError(f"No price data for {symbol}")
 
-            last_price = data['Close'].iloc[-1]
+            last_price = data["Close"].iloc[-1]
             return Decimal(str(last_price))
 
         except Exception as e:
-            self.logger.error(f"Error fetching price for {symbol}: {e}")
+            self.logger.exception(f"Error fetching price for {symbol}: {e}")
             raise
 
-    def get_market_hours(self, symbol: str) -> Dict[str, bool]:
+    def get_market_hours(self, symbol: str) -> dict[str, bool]:
         """Check market hours (simplified)."""
         # Simplified: assume market open Mon-Fri 9:30-16:00 ET
         now = datetime.now()
         is_weekend = now.weekday() >= 5
 
         return {
-            'is_open': not is_weekend,  # Simplified
-            'session': 'regular' if not is_weekend else 'closed'
+            "is_open": not is_weekend,  # Simplified
+            "session": "regular" if not is_weekend else "closed",
         }
 
-    def _save_ledger(self):
+    def _save_ledger(self) -> None:
         """Save ledger to JSON file."""
         try:
             date_str = datetime.now().strftime("%Y-%m-%d")
             ledger_file = self.ledger_dir / f"ledger_{date_str}.json"
 
             ledger = {
-                'date': date_str,
-                'account': self._account.to_dict(),
-                'positions': [p.to_dict() for p in self._positions.values()],
-                'orders': [o.to_dict() for o in self._orders.values()],
-                'fills': [f.to_dict() for f in self._fills]
+                "date": date_str,
+                "account": self._account.to_dict(),
+                "positions": [p.to_dict() for p in self._positions.values()],
+                "orders": [o.to_dict() for o in self._orders.values()],
+                "fills": [f.to_dict() for f in self._fills],
             }
 
-            with open(ledger_file, 'w') as f:
+            with open(ledger_file, "w") as f:
                 json.dump(ledger, f, indent=2)
 
             self.logger.info(f"Ledger saved: {ledger_file}")

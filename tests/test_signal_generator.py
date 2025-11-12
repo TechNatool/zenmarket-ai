@@ -3,8 +3,9 @@ Tests for signal generator.
 """
 
 import pytest
-from src.advisor.signal_generator import SignalGenerator, TradingSignal, SignalType
+
 from src.advisor.indicators import TechnicalIndicators
+from src.advisor.signal_generator import SignalGenerator, SignalType, TradingSignal
 
 
 @pytest.fixture
@@ -21,12 +22,12 @@ def bullish_indicators():
         current_price=105.0,
         ma_20=104.0,
         ma_50=100.0,  # MA20 > MA50 = bullish
-        rsi=55.0,     # Neutral RSI
+        rsi=55.0,  # Neutral RSI
         bb_upper=110.0,
         bb_middle=105.0,
         bb_lower=100.0,
         volume_avg=1000000,
-        current_volume=1200000
+        current_volume=1200000,
     )
 
 
@@ -38,12 +39,12 @@ def bearish_indicators():
         current_price=95.0,
         ma_20=96.0,
         ma_50=100.0,  # MA20 < MA50 = bearish
-        rsi=45.0,     # Neutral RSI
+        rsi=45.0,  # Neutral RSI
         bb_upper=110.0,
         bb_middle=100.0,
         bb_lower=90.0,
         volume_avg=1000000,
-        current_volume=800000
+        current_volume=800000,
     )
 
 
@@ -55,11 +56,11 @@ def oversold_indicators():
         current_price=90.0,
         ma_20=92.0,
         ma_50=95.0,
-        rsi=25.0,     # Oversold
+        rsi=25.0,  # Oversold
         bb_upper=110.0,
         bb_middle=100.0,
         bb_lower=90.0,
-        volume_avg=1000000
+        volume_avg=1000000,
     )
 
 
@@ -71,11 +72,11 @@ def overbought_indicators():
         current_price=110.0,
         ma_20=108.0,
         ma_50=105.0,
-        rsi=75.0,     # Overbought
+        rsi=75.0,  # Overbought
         bb_upper=110.0,
         bb_middle=105.0,
         bb_lower=100.0,
-        volume_avg=1000000
+        volume_avg=1000000,
     )
 
 
@@ -114,7 +115,7 @@ def test_oversold_signal(generator, oversold_indicators):
     # Oversold should favor BUY or HOLD
     assert signal.signal in [SignalType.BUY, SignalType.HOLD]
     # Should mention RSI in reasons
-    assert any('RSI' in reason for reason in signal.reasons)
+    assert any("RSI" in reason for reason in signal.reasons)
 
 
 def test_overbought_signal(generator, overbought_indicators):
@@ -124,7 +125,7 @@ def test_overbought_signal(generator, overbought_indicators):
     # Overbought should favor SELL or HOLD
     assert signal.signal in [SignalType.SELL, SignalType.HOLD]
     # Should mention RSI in reasons
-    assert any('RSI' in reason for reason in signal.reasons)
+    assert any("RSI" in reason for reason in signal.reasons)
 
 
 def test_generate_signals_batch(generator, bullish_indicators, bearish_indicators):
@@ -169,12 +170,12 @@ def test_get_signal_summary(generator):
     summary = generator.get_signal_summary(signals)
 
     assert isinstance(summary, dict)
-    assert summary['total'] == 4
-    assert summary['buy'] == 2
-    assert summary['sell'] == 1
-    assert summary['hold'] == 1
-    assert summary['buy_pct'] == 50.0
-    assert 'avg_confidence' in summary
+    assert summary["total"] == 4
+    assert summary["buy"] == 2
+    assert summary["sell"] == 1
+    assert summary["hold"] == 1
+    assert summary["buy_pct"] == 50.0
+    assert "avg_confidence" in summary
 
 
 def test_signal_emoji(generator, bullish_indicators):
@@ -207,11 +208,11 @@ def test_signal_to_dict(generator, bullish_indicators):
     signal_dict = signal.to_dict()
 
     assert isinstance(signal_dict, dict)
-    assert 'ticker' in signal_dict
-    assert 'signal' in signal_dict
-    assert 'confidence' in signal_dict
-    assert 'reasons' in signal_dict
-    assert 'trend' in signal_dict
+    assert "ticker" in signal_dict
+    assert "signal" in signal_dict
+    assert "confidence" in signal_dict
+    assert "reasons" in signal_dict
+    assert "trend" in signal_dict
 
 
 def test_strong_oversold_signal(generator):
@@ -225,7 +226,7 @@ def test_strong_oversold_signal(generator):
         bb_upper=100.0,
         bb_middle=90.0,
         bb_lower=80.0,
-        volume_avg=1000000
+        volume_avg=1000000,
     )
 
     signal = generator.generate_signal(indicators)
@@ -246,7 +247,7 @@ def test_strong_overbought_signal(generator):
         bb_upper=120.0,
         bb_middle=110.0,
         bb_lower=100.0,
-        volume_avg=1000000
+        volume_avg=1000000,
     )
 
     signal = generator.generate_signal(indicators)

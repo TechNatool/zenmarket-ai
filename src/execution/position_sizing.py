@@ -4,16 +4,16 @@ Implements various sizing methods: fixed fractional, Kelly criterion, fixed doll
 """
 
 from decimal import Decimal
-from typing import Optional
 from enum import Enum
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class SizingMethod(Enum):
     """Position sizing method."""
+
     FIXED_FRACTIONAL = "fixed_fractional"
     KELLY = "kelly"
     FIXED_DOLLAR = "fixed_dollar"
@@ -27,9 +27,8 @@ class PositionSizer:
     Supports multiple sizing methods to adapt to different strategies.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize position sizer."""
-        pass
 
     def fixed_fractional(
         self,
@@ -37,9 +36,9 @@ class PositionSizer:
         risk_percent: float,
         entry_price: Decimal,
         stop_loss_price: Decimal,
-        atr: Optional[Decimal] = None,
-        atr_avg: Optional[Decimal] = None,
-        tick_value: Decimal = Decimal('1.0')
+        atr: Decimal | None = None,
+        atr_avg: Decimal | None = None,
+        tick_value: Decimal = Decimal("1.0"),
     ) -> Decimal:
         """
         Calculate position size using fixed fractional method.
@@ -66,18 +65,18 @@ class PositionSizer:
             Risk per share: $5
             Position: $1,000 / $5 = 200 shares
         """
-        if entry_price <= Decimal('0') or stop_loss_price <= Decimal('0'):
+        if entry_price <= Decimal("0") or stop_loss_price <= Decimal("0"):
             raise ValueError("Prices must be positive")
 
-        if equity <= Decimal('0'):
+        if equity <= Decimal("0"):
             raise ValueError("Equity must be positive")
 
         # Calculate risk per share
         risk_per_share = abs(entry_price - stop_loss_price) * tick_value
 
-        if risk_per_share <= Decimal('0'):
+        if risk_per_share <= Decimal("0"):
             # If stop loss equals entry price, return 0
-            return Decimal('0')
+            return Decimal("0")
 
         # Calculate dollar risk
         dollar_risk = equity * Decimal(str(risk_percent))
@@ -86,9 +85,9 @@ class PositionSizer:
         position_size = dollar_risk / risk_per_share
 
         # Apply volatility adjustment if ATR provided
-        if atr is not None and atr_avg is not None and atr_avg > Decimal('0'):
+        if atr is not None and atr_avg is not None and atr_avg > Decimal("0"):
             volatility_ratio = atr / atr_avg
-            if volatility_ratio > Decimal('1.0'):
+            if volatility_ratio > Decimal("1.0"):
                 # Reduce position size in high volatility
                 position_size = position_size / volatility_ratio
 
@@ -106,8 +105,8 @@ class PositionSizer:
         win_rate: float,
         avg_win: float,
         avg_loss: float,
-        entry_price: Optional[Decimal] = None,
-        kelly_fraction: float = 0.25
+        entry_price: Decimal | None = None,
+        kelly_fraction: float = 0.25,
     ) -> Decimal:
         """
         Calculate position size using Kelly criterion.
@@ -165,17 +164,13 @@ class PositionSizer:
         )
 
         # Convert to quantity if entry_price provided
-        if entry_price is not None and entry_price > Decimal('0'):
+        if entry_price is not None and entry_price > Decimal("0"):
             quantity = int(position_value / entry_price)
             return Decimal(str(quantity))
 
         return position_value
 
-    def fixed_dollar(
-        self,
-        dollar_amount: Decimal,
-        entry_price: Decimal
-    ) -> Decimal:
+    def fixed_dollar(self, dollar_amount: Decimal, entry_price: Decimal) -> Decimal:
         """
         Calculate position size for fixed dollar amount.
 
@@ -186,11 +181,11 @@ class PositionSizer:
         Returns:
             Position size (quantity) - whole shares only
         """
-        if dollar_amount <= Decimal('0'):
+        if dollar_amount <= Decimal("0"):
             raise ValueError("Dollar amount and price must be positive")
 
-        if entry_price <= Decimal('0'):
-            return Decimal('0')
+        if entry_price <= Decimal("0"):
+            return Decimal("0")
 
         # Calculate quantity and round down to whole shares
         quantity = int(dollar_amount / entry_price)
@@ -201,10 +196,7 @@ class PositionSizer:
 
         return Decimal(str(quantity))
 
-    def fixed_shares(
-        self,
-        shares: Decimal
-    ) -> Decimal:
+    def fixed_shares(self, shares: Decimal) -> Decimal:
         """
         Return fixed number of shares.
 
@@ -214,17 +206,12 @@ class PositionSizer:
         Returns:
             Position size (same as input)
         """
-        if shares <= Decimal('0'):
+        if shares <= Decimal("0"):
             raise ValueError("Shares must be positive")
 
         return shares
 
-    def percent_of_equity(
-        self,
-        equity: Decimal,
-        percent: float,
-        entry_price: Decimal
-    ) -> Decimal:
+    def percent_of_equity(self, equity: Decimal, percent: float, entry_price: Decimal) -> Decimal:
         """
         Calculate position size as percentage of equity.
 
@@ -243,13 +230,13 @@ class PositionSizer:
             Position value: $10,000
             Quantity: 200 shares
         """
-        if equity <= Decimal('0'):
+        if equity <= Decimal("0"):
             raise ValueError("Equity must be positive")
 
         if percent <= 0.0:
             raise ValueError("Percent must be positive")
 
-        if entry_price <= Decimal('0'):
+        if entry_price <= Decimal("0"):
             raise ValueError("Entry price must be positive")
 
         # Calculate dollar amount to invest
@@ -271,7 +258,7 @@ class PositionSizer:
         r_amount: Decimal,
         entry_price: Decimal,
         stop_loss_price: Decimal,
-        target_r: float = 1.0
+        target_r: float = 1.0,
     ) -> Decimal:
         """
         Calculate position size based on R-multiples.
@@ -296,13 +283,13 @@ class PositionSizer:
             Risk per share: $5
             Quantity: $2000 / $5 = 400 shares
         """
-        if equity <= Decimal('0'):
+        if equity <= Decimal("0"):
             raise ValueError("Equity must be positive")
 
-        if r_amount <= Decimal('0'):
+        if r_amount <= Decimal("0"):
             raise ValueError("R amount must be positive")
 
-        if entry_price <= Decimal('0') or stop_loss_price <= Decimal('0'):
+        if entry_price <= Decimal("0") or stop_loss_price <= Decimal("0"):
             raise ValueError("Prices must be positive")
 
         if target_r <= 0:
@@ -311,8 +298,8 @@ class PositionSizer:
         # Calculate risk per share
         risk_per_share = abs(entry_price - stop_loss_price)
 
-        if risk_per_share == Decimal('0'):
-            return Decimal('0')
+        if risk_per_share == Decimal("0"):
+            return Decimal("0")
 
         # Calculate total dollar risk
         total_risk = r_amount * Decimal(str(target_r))
@@ -329,10 +316,7 @@ class PositionSizer:
         return Decimal(str(quantity))
 
     def calculate_r_multiple(
-        self,
-        entry_price: Decimal,
-        exit_price: Decimal,
-        stop_loss_price: Decimal
+        self, entry_price: Decimal, exit_price: Decimal, stop_loss_price: Decimal
     ) -> float:
         """
         Calculate R-multiple for a trade.
@@ -349,20 +333,15 @@ class PositionSizer:
         """
         risk_per_share = abs(entry_price - stop_loss_price)
 
-        if risk_per_share == Decimal('0'):
+        if risk_per_share == Decimal("0"):
             raise ValueError("Stop loss cannot equal entry price")
 
         profit_per_share = exit_price - entry_price
 
-        r_multiple = float(profit_per_share / risk_per_share)
-
-        return r_multiple
+        return float(profit_per_share / risk_per_share)
 
     def calculate_risk_reward_ratio(
-        self,
-        entry_price: Decimal,
-        target_price: Decimal,
-        stop_loss_price: Decimal
+        self, entry_price: Decimal, target_price: Decimal, stop_loss_price: Decimal
     ) -> float:
         """
         Calculate risk/reward ratio.
@@ -384,7 +363,7 @@ class PositionSizer:
         base_size: Decimal,
         current_atr: float,
         average_atr: float,
-        volatility_adjustment: bool = True
+        volatility_adjustment: bool = True,
     ) -> Decimal:
         """
         Adjust position size based on volatility (ATR).
@@ -423,11 +402,7 @@ class PositionSizer:
 
         return adjusted_size
 
-    def calculate_position_value(
-        self,
-        quantity: Decimal,
-        price: Decimal
-    ) -> Decimal:
+    def calculate_position_value(self, quantity: Decimal, price: Decimal) -> Decimal:
         """
         Calculate total position value.
 
@@ -441,10 +416,7 @@ class PositionSizer:
         return quantity * price
 
     def calculate_max_position_size(
-        self,
-        equity: Decimal,
-        max_position_percent: float,
-        price: Decimal
+        self, equity: Decimal, max_position_percent: float, price: Decimal
     ) -> Decimal:
         """
         Calculate maximum position size based on portfolio allocation.
@@ -473,9 +445,9 @@ def calculate_position_size(
     method: SizingMethod,
     equity: Decimal,
     entry_price: Decimal,
-    stop_loss_price: Optional[Decimal] = None,
+    stop_loss_price: Decimal | None = None,
     risk_percent: float = 0.01,
-    **kwargs
+    **kwargs,
 ) -> Decimal:
     """
     Calculate position size using specified method.
@@ -511,28 +483,25 @@ def calculate_position_size(
             risk_percent=risk_percent,
             entry_price=entry_price,
             stop_loss_price=stop_loss_price,
-            tick_value=kwargs.get('tick_value', Decimal('1.0'))
+            tick_value=kwargs.get("tick_value", Decimal("1.0")),
         )
 
-    elif method == SizingMethod.KELLY:
+    if method == SizingMethod.KELLY:
         return sizer.kelly_criterion(
             equity=equity,
-            win_rate=kwargs.get('win_rate', 0.5),
-            avg_win=kwargs.get('avg_win', 1.0),
-            avg_loss=kwargs.get('avg_loss', 1.0),
-            kelly_fraction=kwargs.get('kelly_fraction', 0.25)
+            win_rate=kwargs.get("win_rate", 0.5),
+            avg_win=kwargs.get("avg_win", 1.0),
+            avg_loss=kwargs.get("avg_loss", 1.0),
+            kelly_fraction=kwargs.get("kelly_fraction", 0.25),
         )
 
-    elif method == SizingMethod.FIXED_DOLLAR:
+    if method == SizingMethod.FIXED_DOLLAR:
         return sizer.fixed_dollar(
-            dollar_amount=kwargs.get('dollar_amount', equity * Decimal('0.01')),
-            entry_price=entry_price
+            dollar_amount=kwargs.get("dollar_amount", equity * Decimal("0.01")),
+            entry_price=entry_price,
         )
 
-    elif method == SizingMethod.FIXED_SHARES:
-        return sizer.fixed_shares(
-            shares=kwargs.get('shares', Decimal('100'))
-        )
+    if method == SizingMethod.FIXED_SHARES:
+        return sizer.fixed_shares(shares=kwargs.get("shares", Decimal("100")))
 
-    else:
-        raise ValueError(f"Unknown sizing method: {method}")
+    raise ValueError(f"Unknown sizing method: {method}")

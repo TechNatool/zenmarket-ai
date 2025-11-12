@@ -3,16 +3,15 @@ News fetcher module for ZenMarket AI.
 Retrieves financial news from multiple sources: NewsAPI, RSS feeds, etc.
 """
 
-import requests
-import feedparser
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-import time
+from dataclasses import asdict, dataclass
+from datetime import datetime
 
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
-from ..utils.date_utils import now, get_lookback_time
+import feedparser
+import requests
+
+from src.utils.config_loader import get_config
+from src.utils.date_utils import get_lookback_time, now
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,14 +25,14 @@ class NewsArticle:
     source: str
     url: str
     published_at: datetime
-    author: Optional[str] = None
-    category: Optional[str] = None
-    sentiment: Optional[str] = None
+    author: str | None = None
+    category: str | None = None
+    sentiment: str | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         data = asdict(self)
-        data['published_at'] = self.published_at.isoformat()
+        data["published_at"] = self.published_at.isoformat()
         return data
 
 
@@ -55,25 +54,42 @@ class NewsFetcher:
 
     # Keywords for filtering relevant financial news
     FINANCIAL_KEYWORDS = [
-        "stock", "market", "trading", "economy", "fed", "ecb", "inflation",
-        "interest rate", "dollar", "euro", "bitcoin", "crypto", "nasdaq",
-        "dow", "s&p", "dax", "ftse", "earnings", "revenue", "profit",
-        "gdp", "unemployment", "central bank", "fiscal", "monetary"
+        "stock",
+        "market",
+        "trading",
+        "economy",
+        "fed",
+        "ecb",
+        "inflation",
+        "interest rate",
+        "dollar",
+        "euro",
+        "bitcoin",
+        "crypto",
+        "nasdaq",
+        "dow",
+        "s&p",
+        "dax",
+        "ftse",
+        "earnings",
+        "revenue",
+        "profit",
+        "gdp",
+        "unemployment",
+        "central bank",
+        "fiscal",
+        "monetary",
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize news fetcher with configuration."""
         self.config = get_config()
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'ZenMarket-AI/1.0'
-        })
+        self.session.headers.update({"User-Agent": "ZenMarket-AI/1.0"})
 
     def fetch_from_newsapi(
-        self,
-        lookback_hours: Optional[int] = None,
-        max_articles: Optional[int] = None
-    ) -> List[NewsArticle]:
+        self, lookback_hours: int | None = None, max_articles: int | None = None
+    ) -> list[NewsArticle]:
         """
         Fetch news from NewsAPI.org.
 
@@ -139,15 +155,13 @@ class NewsFetcher:
                 logger.error(f"NewsAPI error: {data.get('message', 'Unknown error')}")
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching from NewsAPI: {e}")
+            logger.exception(f"Error fetching from NewsAPI: {e}")
 
         return articles
 
     def fetch_from_rss(
-        self,
-        feeds: Optional[Dict[str, str]] = None,
-        lookback_hours: Optional[int] = None
-    ) -> List[NewsArticle]:
+        self, feeds: dict[str, str] | None = None, lookback_hours: int | None = None
+    ) -> list[NewsArticle]:
         """
         Fetch news from RSS feeds.
 
@@ -172,9 +186,9 @@ class NewsFetcher:
                 for entry in feed.entries:
                     try:
                         # Parse publication date
-                        if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                        if hasattr(entry, "published_parsed") and entry.published_parsed:
                             pub_date = datetime(*entry.published_parsed[:6])
-                        elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+                        elif hasattr(entry, "updated_parsed") and entry.updated_parsed:
                             pub_date = datetime(*entry.updated_parsed[:6])
                         else:
                             pub_date = now()
@@ -197,15 +211,17 @@ class NewsFetcher:
                         logger.warning(f"Error parsing RSS entry from {feed_name}: {e}")
                         continue
 
-                logger.info(f"Fetched {len([a for a in articles if a.source == feed_name])} articles from {feed_name}")
+                logger.info(
+                    f"Fetched {len([a for a in articles if a.source == feed_name])} articles from {feed_name}"
+                )
 
             except Exception as e:
-                logger.error(f"Error fetching RSS feed {feed_name}: {e}")
+                logger.exception(f"Error fetching RSS feed {feed_name}: {e}")
                 continue
 
         return articles
 
-    def filter_relevant(self, articles: List[NewsArticle]) -> List[NewsArticle]:
+    def filter_relevant(self, articles: list[NewsArticle]) -> list[NewsArticle]:
         """
         Filter articles to keep only financially relevant ones.
 
@@ -227,7 +243,7 @@ class NewsFetcher:
         logger.info(f"Filtered {len(relevant)}/{len(articles)} relevant articles")
         return relevant
 
-    def deduplicate(self, articles: List[NewsArticle]) -> List[NewsArticle]:
+    def deduplicate(self, articles: list[NewsArticle]) -> list[NewsArticle]:
         """
         Remove duplicate articles based on title similarity.
 
@@ -256,8 +272,8 @@ class NewsFetcher:
         use_newsapi: bool = True,
         use_rss: bool = True,
         filter_relevant: bool = True,
-        deduplicate: bool = True
-    ) -> List[NewsArticle]:
+        deduplicate: bool = True,
+    ) -> list[NewsArticle]:
         """
         Fetch news from all sources.
 

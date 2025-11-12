@@ -5,14 +5,14 @@ Handles environment variables and application settings.
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+
 from dotenv import load_dotenv
 
 
 class Config:
     """Central configuration manager for ZenMarket AI."""
 
-    def __init__(self, env_file: Optional[str] = None):
+    def __init__(self, env_file: str | None = None) -> None:
         """
         Initialize configuration.
 
@@ -83,7 +83,7 @@ class Config:
         self.report_output_dir.mkdir(parents=True, exist_ok=True)
         self.data_cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """
         Validate that required configuration is present.
 
@@ -123,7 +123,7 @@ class Config:
         }
         return service_map.get(service, "")
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert configuration to dictionary (excluding sensitive data)."""
         return {
             "ai_provider": self.ai_provider,
@@ -137,7 +137,7 @@ class Config:
 
 
 # Global configuration instance
-_config: Optional[Config] = None
+_config: Config | None = None
 
 
 def get_config(reload: bool = False) -> Config:

@@ -3,17 +3,19 @@ AI Trading Advisor Report Generator.
 Creates comprehensive trading reports with technical analysis and AI insights.
 """
 
-import yfinance as yf
-from pathlib import Path
-from typing import List, Dict, Optional
 from datetime import datetime
+from pathlib import Path
 
-from .indicators import IndicatorCalculator, TechnicalIndicators
-from .signal_generator import SignalGenerator, TradingSignal, SignalType
+import pandas as pd
+import yfinance as yf
+
+from src.utils.config_loader import get_config
+from src.utils.date_utils import format_friendly_date, now
+from src.utils.logger import get_logger
+
+from .indicators import IndicatorCalculator
 from .plotter import TechnicalChartPlotter
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
-from ..utils.date_utils import now, format_friendly_date
+from .signal_generator import SignalGenerator, SignalType, TradingSignal
 
 logger = get_logger(__name__)
 
@@ -21,7 +23,7 @@ logger = get_logger(__name__)
 class AdvisorReportGenerator:
     """Generates AI Trading Advisor reports."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize report generator."""
         self.config = get_config()
         self.calculator = IndicatorCalculator()
@@ -29,11 +31,8 @@ class AdvisorReportGenerator:
         self.plotter = TechnicalChartPlotter()
 
     def fetch_market_data(
-        self,
-        ticker: str,
-        period: str = "3mo",
-        interval: str = "1d"
-    ) -> Optional[pd.DataFrame]:
+        self, ticker: str, period: str = "3mo", interval: str = "1d"
+    ) -> pd.DataFrame | None:
         """
         Fetch market data using yfinance.
 
@@ -57,10 +56,10 @@ class AdvisorReportGenerator:
             return data
 
         except Exception as e:
-            logger.error(f"Error fetching data for {ticker}: {e}")
+            logger.exception(f"Error fetching data for {ticker}: {e}")
             return None
 
-    def analyze_ticker(self, ticker: str) -> Optional[TradingSignal]:
+    def analyze_ticker(self, ticker: str) -> TradingSignal | None:
         """
         Perform complete analysis for a ticker.
 
@@ -90,14 +89,11 @@ class AdvisorReportGenerator:
             return signal
 
         except Exception as e:
-            logger.error(f"Error analyzing {ticker}: {e}")
+            logger.exception(f"Error analyzing {ticker}: {e}")
             return None
 
     def generate_ai_commentary(
-        self,
-        signals: List[TradingSignal],
-        market_bias: str,
-        bias_score: float
+        self, signals: list[TradingSignal], market_bias: str, bias_score: float
     ) -> str:
         """
         Generate AI commentary on trading signals.
@@ -113,20 +109,16 @@ class AdvisorReportGenerator:
         try:
             if self.config.ai_provider == "openai" and self.config.openai_api_key:
                 return self._generate_commentary_openai(signals, market_bias, bias_score)
-            elif self.config.ai_provider == "anthropic" and self.config.anthropic_api_key:
+            if self.config.ai_provider == "anthropic" and self.config.anthropic_api_key:
                 return self._generate_commentary_anthropic(signals, market_bias, bias_score)
-            else:
-                return self._generate_fallback_commentary(signals, market_bias, bias_score)
+            return self._generate_fallback_commentary(signals, market_bias, bias_score)
 
         except Exception as e:
-            logger.error(f"Error generating AI commentary: {e}")
+            logger.exception(f"Error generating AI commentary: {e}")
             return self._generate_fallback_commentary(signals, market_bias, bias_score)
 
     def _generate_commentary_openai(
-        self,
-        signals: List[TradingSignal],
-        market_bias: str,
-        bias_score: float
+        self, signals: list[TradingSignal], market_bias: str, bias_score: float
     ) -> str:
         """Generate commentary using OpenAI."""
         import openai
@@ -134,11 +126,13 @@ class AdvisorReportGenerator:
         openai.api_key = self.config.openai_api_key
 
         # Prepare signal summary
-        signal_summary = "\n".join([
-            f"- {s.ticker}: {s.signal.value} (RSI: {s.indicators.rsi:.1f}, "
-            f"MA20: {s.indicators.ma_20:.2f}, MA50: {s.indicators.ma_50:.2f})"
-            for s in signals
-        ])
+        signal_summary = "\n".join(
+            [
+                f"- {s.ticker}: {s.signal.value} (RSI: {s.indicators.rsi:.1f}, "
+                f"MA20: {s.indicators.ma_20:.2f}, MA50: {s.indicators.ma_50:.2f})"
+                for s in signals
+            ]
+        )
 
         prompt = f"""Tu es un analyste financier professionnel. Rédige une analyse concise (2-3 phrases) basée sur ces signaux techniques:
 
@@ -153,7 +147,7 @@ Fournis une interprétation professionnelle et actionnable sans répéter les ch
             model=self.config.openai_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
-            max_tokens=200
+            max_tokens=200,
         )
 
         commentary = response.choices[0].message.content.strip()
@@ -161,21 +155,20 @@ Fournis une interprétation professionnelle et actionnable sans répéter les ch
         return commentary
 
     def _generate_commentary_anthropic(
-        self,
-        signals: List[TradingSignal],
-        market_bias: str,
-        bias_score: float
+        self, signals: list[TradingSignal], market_bias: str, bias_score: float
     ) -> str:
         """Generate commentary using Anthropic Claude."""
         import anthropic
 
         client = anthropic.Anthropic(api_key=self.config.anthropic_api_key)
 
-        signal_summary = "\n".join([
-            f"- {s.ticker}: {s.signal.value} (RSI: {s.indicators.rsi:.1f}, "
-            f"MA20: {s.indicators.ma_20:.2f}, MA50: {s.indicators.ma_50:.2f})"
-            for s in signals
-        ])
+        signal_summary = "\n".join(
+            [
+                f"- {s.ticker}: {s.signal.value} (RSI: {s.indicators.rsi:.1f}, "
+                f"MA20: {s.indicators.ma_20:.2f}, MA50: {s.indicators.ma_50:.2f})"
+                for s in signals
+            ]
+        )
 
         prompt = f"""Tu es un analyste financier professionnel. Rédige une analyse concise (2-3 phrases) basée sur ces signaux techniques:
 
@@ -190,7 +183,7 @@ Fournis une interprétation professionnelle et actionnable sans répéter les ch
             model=self.config.anthropic_model,
             max_tokens=200,
             temperature=0.5,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         commentary = message.content[0].text.strip()
@@ -198,10 +191,7 @@ Fournis une interprétation professionnelle et actionnable sans répéter les ch
         return commentary
 
     def _generate_fallback_commentary(
-        self,
-        signals: List[TradingSignal],
-        market_bias: str,
-        bias_score: float
+        self, signals: list[TradingSignal], market_bias: str, bias_score: float
     ) -> str:
         """Generate basic commentary without AI."""
         buy_count = sum(1 for s in signals if s.signal == SignalType.BUY)
@@ -224,9 +214,7 @@ Fournis une interprétation professionnelle et actionnable sans répéter les ch
         return base + detail
 
     def generate_markdown_report(
-        self,
-        signals: List[TradingSignal],
-        report_date: Optional[datetime] = None
+        self, signals: list[TradingSignal], report_date: datetime | None = None
     ) -> str:
         """
         Generate Markdown report.
@@ -366,11 +354,7 @@ vos propres analyses et consultez un conseiller financier qualifié.*
 
         return md
 
-    def save_report(
-        self,
-        content: str,
-        filename: str = None
-    ) -> Path:
+    def save_report(self, content: str, filename: str | None = None) -> Path:
         """
         Save report to file.
 
@@ -387,17 +371,15 @@ vos propres analyses et consultez un conseiller financier qualifié.*
 
         filepath = self.config.report_output_dir / filename
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
         logger.info(f"Report saved: {filepath}")
         return filepath
 
     def generate_full_report(
-        self,
-        tickers: List[str] = None,
-        generate_charts: bool = True
-    ) -> Dict:
+        self, tickers: list[str] | None = None, generate_charts: bool = True
+    ) -> dict:
         """
         Generate complete trading advisor report.
 
@@ -446,7 +428,9 @@ vos propres analyses et consultez un conseiller financier qualifié.*
         logger.info("=" * 70)
         logger.info("Report generation complete!")
         logger.info(f"Market bias: {market_bias} ({bias_score:+.2f})")
-        logger.info(f"Signals: {summary['buy']} BUY, {summary['sell']} SELL, {summary['hold']} HOLD")
+        logger.info(
+            f"Signals: {summary['buy']} BUY, {summary['sell']} SELL, {summary['hold']} HOLD"
+        )
         logger.info(f"Report: {report_path}")
         logger.info("=" * 70)
 
@@ -456,9 +440,8 @@ vos propres analyses et consultez un conseiller financier qualifié.*
             "signals": signals,
             "market_bias": market_bias,
             "bias_score": bias_score,
-            "summary": summary
+            "summary": summary,
         }
 
 
 # Import pandas at the top
-import pandas as pd

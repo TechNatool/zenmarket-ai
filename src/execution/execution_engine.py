@@ -4,18 +4,17 @@ Signal → Sizing → Risk Check → Order → Monitoring → Journal
 """
 
 from decimal import Decimal
-from typing import Optional, Dict
-from datetime import datetime
+
+from src.advisor.signal_generator import SignalType, TradingSignal
+from src.utils.logger import get_logger
 
 from .broker_base import BrokerBase
-from .order_types import Order, OrderSide, OrderType
-from .position_sizing import PositionSizer, SizingMethod
-from .risk_manager import RiskManager, RiskLimits
 from .compliance import ComplianceChecker
 from .journal import TradeJournal
+from .order_types import Order, OrderSide, OrderType
 from .pnl_tracker import PnLTracker
-from ..advisor.signal_generator import TradingSignal, SignalType
-from ..utils.logger import get_logger
+from .position_sizing import PositionSizer, SizingMethod
+from .risk_manager import RiskLimits, RiskManager
 
 logger = get_logger(__name__)
 
@@ -38,10 +37,10 @@ class ExecutionEngine:
     def __init__(
         self,
         broker: BrokerBase,
-        risk_limits: Optional[RiskLimits] = None,
+        risk_limits: RiskLimits | None = None,
         sizing_method: SizingMethod = SizingMethod.FIXED_FRACTIONAL,
-        journal_enabled: bool = True
-    ):
+        journal_enabled: bool = True,
+    ) -> None:
         """
         Initialize execution engine.
 
@@ -70,8 +69,8 @@ class ExecutionEngine:
         signal: TradingSignal,
         order_type: OrderType = OrderType.MARKET,
         risk_percent: float = 0.01,
-        dry_run: bool = False
-    ) -> Optional[Order]:
+        dry_run: bool = False,
+    ) -> Order | None:
         """
         Execute trading signal.
 
@@ -98,7 +97,7 @@ class ExecutionEngine:
             side = OrderSide.BUY if signal.signal == SignalType.BUY else OrderSide.SELL
 
             # Step 3: Check compliance
-            is_compliant, status, message = self.compliance.check_market_hours(signal.ticker)
+            is_compliant, _status, message = self.compliance.check_market_hours(signal.ticker)
             if not is_compliant:
                 logger.warning(f"Compliance check failed: {message}")
                 if not dry_run:
@@ -108,15 +107,11 @@ class ExecutionEngine:
             try:
                 current_price = self.broker.get_current_price(signal.ticker)
             except Exception as e:
-                logger.error(f"Failed to get price for {signal.ticker}: {e}")
+                logger.exception(f"Failed to get price for {signal.ticker}: {e}")
                 return None
 
             # Calculate stop loss based on indicators
-            stop_loss = self._calculate_stop_loss(
-                current_price,
-                signal,
-                side
-            )
+            stop_loss = self._calculate_stop_loss(current_price, signal, side)
 
             # Step 5: Calculate position size
             account = self.broker.get_account()
@@ -126,10 +121,10 @@ class ExecutionEngine:
                 equity=equity,
                 entry_price=current_price,
                 stop_loss=stop_loss,
-                risk_percent=risk_percent
+                risk_percent=risk_percent,
             )
 
-            if quantity <= Decimal('0'):
+            if quantity <= Decimal("0"):
                 logger.error("Calculated position size is zero or negative")
                 return None
 
@@ -144,7 +139,7 @@ class ExecutionEngine:
                 side=side,
                 quantity=quantity,
                 entry_price=current_price,
-                stop_loss=stop_loss
+                stop_loss=stop_loss,
             )
 
             if not is_valid:
@@ -155,10 +150,7 @@ class ExecutionEngine:
 
             # Step 7: Calculate take profit (optional)
             take_profit = self._calculate_take_profit(
-                current_price,
-                stop_loss,
-                side,
-                risk_reward_ratio=2.0  # Default 2:1 RR
+                current_price, stop_loss, side, risk_reward_ratio=2.0  # Default 2:1 RR
             )
 
             # Dry run - stop here
@@ -184,7 +176,7 @@ class ExecutionEngine:
                 stop_loss=stop_loss,
                 take_profit=take_profit,
                 strategy="advisor_signal",
-                signal_confidence=signal.confidence
+                signal_confidence=signal.confidence,
             )
 
             logger.info(f"✓ Order placed: {order.order_id}")
@@ -204,22 +196,19 @@ class ExecutionEngine:
             return None
 
     def _calculate_stop_loss(
-        self,
-        entry_price: Decimal,
-        signal: TradingSignal,
-        side: OrderSide
+        self, entry_price: Decimal, signal: TradingSignal, side: OrderSide
     ) -> Decimal:
         """Calculate stop loss based on indicators."""
         # Use ATR or fixed percentage
         indicators = signal.indicators
 
         # Default: 2% stop
-        stop_distance_pct = Decimal('0.02')
+        stop_distance_pct = Decimal("0.02")
 
         # Use ATR if available
         if indicators.atr:
             # Use 2x ATR as stop distance
-            stop_distance = Decimal(str(indicators.atr)) * Decimal('2')
+            stop_distance = Decimal(str(indicators.atr)) * Decimal("2")
         else:
             stop_distance = entry_price * stop_distance_pct
 
@@ -235,25 +224,16 @@ class ExecutionEngine:
         entry_price: Decimal,
         stop_loss: Decimal,
         side: OrderSide,
-        risk_reward_ratio: float = 2.0
+        risk_reward_ratio: float = 2.0,
     ) -> Decimal:
         """Calculate take profit based on risk/reward ratio."""
         risk = abs(entry_price - stop_loss)
         reward = risk * Decimal(str(risk_reward_ratio))
 
-        if side == OrderSide.BUY:
-            take_profit = entry_price + reward
-        else:
-            take_profit = entry_price - reward
-
-        return take_profit
+        return entry_price + reward if side == OrderSide.BUY else entry_price - reward
 
     def _calculate_position_size(
-        self,
-        equity: Decimal,
-        entry_price: Decimal,
-        stop_loss: Decimal,
-        risk_percent: float
+        self, equity: Decimal, entry_price: Decimal, stop_loss: Decimal, risk_percent: float
     ) -> Decimal:
         """Calculate position size using configured method."""
         if self.sizing_method == SizingMethod.FIXED_FRACTIONAL:
@@ -261,37 +241,33 @@ class ExecutionEngine:
                 equity=equity,
                 risk_percent=risk_percent,
                 entry_price=entry_price,
-                stop_loss_price=stop_loss
+                stop_loss_price=stop_loss,
             )
 
-        elif self.sizing_method == SizingMethod.FIXED_DOLLAR:
+        if self.sizing_method == SizingMethod.FIXED_DOLLAR:
             dollar_amount = equity * Decimal(str(risk_percent))
-            return self.sizer.fixed_dollar(
-                dollar_amount=dollar_amount,
-                entry_price=entry_price
-            )
+            return self.sizer.fixed_dollar(dollar_amount=dollar_amount, entry_price=entry_price)
 
-        else:
-            # Fallback to fixed fractional
-            return self.sizer.fixed_fractional(
-                equity=equity,
-                risk_percent=risk_percent,
-                entry_price=entry_price,
-                stop_loss_price=stop_loss
-            )
+        # Fallback to fixed fractional
+        return self.sizer.fixed_fractional(
+            equity=equity,
+            risk_percent=risk_percent,
+            entry_price=entry_price,
+            stop_loss_price=stop_loss,
+        )
 
-    def _update_pnl_tracker(self):
+    def _update_pnl_tracker(self) -> None:
         """Update PnL tracker with current account state."""
         account = self.broker.get_account()
 
         self.pnl_tracker.add_snapshot(
             equity=account.equity,
             realized_pnl=account.total_pnl,
-            unrealized_pnl=Decimal('0'),  # Would calculate from positions
-            cash=account.cash
+            unrealized_pnl=Decimal("0"),  # Would calculate from positions
+            cash=account.cash,
         )
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """
         Get engine status.
 
@@ -299,14 +275,14 @@ class ExecutionEngine:
             Dictionary with status information
         """
         return {
-            'broker': self.broker.broker_name,
-            'connected': self.broker.is_connected(),
-            'risk_summary': self.risk_manager.get_risk_summary(),
-            'performance': self.pnl_tracker.get_performance_metrics() if self.pnl_tracker else {},
-            'journal_enabled': self.journal is not None
+            "broker": self.broker.broker_name,
+            "connected": self.broker.is_connected(),
+            "risk_summary": self.risk_manager.get_risk_summary(),
+            "performance": self.pnl_tracker.get_performance_metrics() if self.pnl_tracker else {},
+            "journal_enabled": self.journal is not None,
         }
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown engine and save journals."""
         logger.info("Shutting down execution engine")
 

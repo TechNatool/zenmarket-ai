@@ -4,14 +4,11 @@ Defines the interface that all brokers must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict
 from decimal import Decimal
 
-from .order_types import (
-    Order, Position, Fill, Account,
-    OrderSide, OrderType, OrderStatus
-)
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
+
+from .order_types import Account, Fill, Order, OrderSide, OrderStatus, OrderType, Position
 
 logger = get_logger(__name__)
 
@@ -23,7 +20,7 @@ class BrokerBase(ABC):
     All broker connectors (simulator, IBKR, MT5, etc.) must implement these methods.
     """
 
-    def __init__(self, broker_name: str):
+    def __init__(self, broker_name: str) -> None:
         """
         Initialize broker.
 
@@ -41,12 +38,10 @@ class BrokerBase(ABC):
         Returns:
             True if connected successfully
         """
-        pass
 
     @abstractmethod
     def disconnect(self):
         """Disconnect from broker."""
-        pass
 
     @abstractmethod
     def is_connected(self) -> bool:
@@ -56,7 +51,6 @@ class BrokerBase(ABC):
         Returns:
             True if connected
         """
-        pass
 
     @abstractmethod
     def get_account(self) -> Account:
@@ -66,20 +60,18 @@ class BrokerBase(ABC):
         Returns:
             Account object with current state
         """
-        pass
 
     @abstractmethod
-    def get_positions(self) -> List[Position]:
+    def get_positions(self) -> list[Position]:
         """
         Get all open positions.
 
         Returns:
             List of Position objects
         """
-        pass
 
     @abstractmethod
-    def get_position(self, symbol: str) -> Optional[Position]:
+    def get_position(self, symbol: str) -> Position | None:
         """
         Get position for specific symbol.
 
@@ -89,7 +81,6 @@ class BrokerBase(ABC):
         Returns:
             Position object or None if no position
         """
-        pass
 
     @abstractmethod
     def place_order(
@@ -98,12 +89,12 @@ class BrokerBase(ABC):
         side: OrderSide,
         quantity: Decimal,
         order_type: OrderType = OrderType.MARKET,
-        limit_price: Optional[Decimal] = None,
-        stop_price: Optional[Decimal] = None,
-        stop_loss: Optional[Decimal] = None,
-        take_profit: Optional[Decimal] = None,
-        strategy: Optional[str] = None,
-        **kwargs
+        limit_price: Decimal | None = None,
+        stop_price: Decimal | None = None,
+        stop_loss: Decimal | None = None,
+        take_profit: Decimal | None = None,
+        strategy: str | None = None,
+        **kwargs,
     ) -> Order:
         """
         Place an order.
@@ -127,7 +118,6 @@ class BrokerBase(ABC):
             ValueError: If parameters are invalid
             RuntimeError: If order placement fails
         """
-        pass
 
     @abstractmethod
     def cancel_order(self, order_id: str) -> bool:
@@ -140,10 +130,9 @@ class BrokerBase(ABC):
         Returns:
             True if cancelled successfully
         """
-        pass
 
     @abstractmethod
-    def get_order(self, order_id: str) -> Optional[Order]:
+    def get_order(self, order_id: str) -> Order | None:
         """
         Get order status.
 
@@ -153,14 +142,11 @@ class BrokerBase(ABC):
         Returns:
             Order object or None if not found
         """
-        pass
 
     @abstractmethod
     def get_orders(
-        self,
-        symbol: Optional[str] = None,
-        status: Optional[OrderStatus] = None
-    ) -> List[Order]:
+        self, symbol: str | None = None, status: OrderStatus | None = None
+    ) -> list[Order]:
         """
         Get orders.
 
@@ -171,14 +157,9 @@ class BrokerBase(ABC):
         Returns:
             List of Order objects
         """
-        pass
 
     @abstractmethod
-    def get_fills(
-        self,
-        symbol: Optional[str] = None,
-        order_id: Optional[str] = None
-    ) -> List[Fill]:
+    def get_fills(self, symbol: str | None = None, order_id: str | None = None) -> list[Fill]:
         """
         Get trade fills/executions.
 
@@ -189,7 +170,6 @@ class BrokerBase(ABC):
         Returns:
             List of Fill objects
         """
-        pass
 
     @abstractmethod
     def get_current_price(self, symbol: str) -> Decimal:
@@ -202,10 +182,9 @@ class BrokerBase(ABC):
         Returns:
             Current price as Decimal
         """
-        pass
 
     @abstractmethod
-    def get_market_hours(self, symbol: str) -> Dict[str, bool]:
+    def get_market_hours(self, symbol: str) -> dict[str, bool]:
         """
         Check if market is open.
 
@@ -215,7 +194,6 @@ class BrokerBase(ABC):
         Returns:
             Dictionary with 'is_open' and 'next_open'/'next_close' info
         """
-        pass
 
     # Helper methods (can be overridden if needed)
 
@@ -225,8 +203,8 @@ class BrokerBase(ABC):
         side: OrderSide,
         quantity: Decimal,
         order_type: OrderType,
-        limit_price: Optional[Decimal] = None,
-        stop_price: Optional[Decimal] = None
+        limit_price: Decimal | None = None,
+        stop_price: Decimal | None = None,
     ) -> bool:
         """
         Validate order parameters.
@@ -245,7 +223,7 @@ class BrokerBase(ABC):
         Raises:
             ValueError: If parameters are invalid
         """
-        if quantity <= Decimal('0'):
+        if quantity <= Decimal("0"):
             raise ValueError(f"Quantity must be positive: {quantity}")
 
         if order_type == OrderType.LIMIT and limit_price is None:
@@ -260,11 +238,7 @@ class BrokerBase(ABC):
 
         return True
 
-    def close_position(
-        self,
-        symbol: str,
-        order_type: OrderType = OrderType.MARKET
-    ) -> Optional[Order]:
+    def close_position(self, symbol: str, order_type: OrderType = OrderType.MARKET) -> Order | None:
         """
         Close position for a symbol.
 
@@ -277,12 +251,12 @@ class BrokerBase(ABC):
         """
         position = self.get_position(symbol)
 
-        if position is None or position.quantity == Decimal('0'):
+        if position is None or position.quantity == Decimal("0"):
             self.logger.warning(f"No position to close for {symbol}")
             return None
 
         # Determine side (opposite of current position)
-        side = OrderSide.SELL if position.quantity > Decimal('0') else OrderSide.BUY
+        side = OrderSide.SELL if position.quantity > Decimal("0") else OrderSide.BUY
         quantity = abs(position.quantity)
 
         self.logger.info(f"Closing position: {symbol} {side.value} {quantity}")
@@ -292,7 +266,7 @@ class BrokerBase(ABC):
             side=side,
             quantity=quantity,
             order_type=order_type,
-            strategy="close_position"
+            strategy="close_position",
         )
 
     def get_equity(self) -> Decimal:

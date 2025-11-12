@@ -7,14 +7,15 @@ Can be run as: python -m src.advisor
 import argparse
 import sys
 
+from src.utils.config_loader import get_config
+from src.utils.logger import setup_logger
+
 from .advisor_report import AdvisorReportGenerator
-from ..utils.logger import setup_logger, get_logger
-from ..utils.config_loader import get_config
 
 logger = None
 
 
-def main():
+def main() -> None:
     """Main function."""
     global logger
 
@@ -27,32 +28,24 @@ Examples:
   python -m src.advisor --tickers "^GDAXI,^IXIC"    # Analyze specific tickers
   python -m src.advisor --no-charts                  # Skip chart generation
   python -m src.advisor --log-level DEBUG            # Enable debug logging
-        """
+        """,
     )
 
     parser.add_argument(
-        "--tickers",
-        type=str,
-        help="Comma-separated list of tickers (default: from config)"
+        "--tickers", type=str, help="Comma-separated list of tickers (default: from config)"
     )
 
-    parser.add_argument(
-        "--no-charts",
-        action="store_true",
-        help="Skip chart generation (faster)"
-    )
+    parser.add_argument("--no-charts", action="store_true", help="Skip chart generation (faster)")
 
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Logging level (default: INFO)"
+        help="Logging level (default: INFO)",
     )
 
     parser.add_argument(
-        "--version",
-        action="version",
-        version="ZenMarket AI Trading Advisor v1.0.0"
+        "--version", action="version", version="ZenMarket AI Trading Advisor v1.0.0"
     )
 
     args = parser.parse_args()
@@ -78,10 +71,7 @@ Examples:
     # Generate report
     generator = AdvisorReportGenerator()
 
-    result = generator.generate_full_report(
-        tickers=tickers,
-        generate_charts=not args.no_charts
-    )
+    result = generator.generate_full_report(tickers=tickers, generate_charts=not args.no_charts)
 
     if result["success"]:
         logger.info("Trading advisor report generated successfully!")

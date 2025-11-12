@@ -3,12 +3,11 @@ PnL (Profit & Loss) tracker with performance metrics.
 Tracks realized/unrealized PnL, equity curve, and drawdown.
 """
 
-from decimal import Decimal
+from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Optional
-from dataclasses import dataclass, field
+from decimal import Decimal
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -24,15 +23,15 @@ class PnLSnapshot:
     cash: Decimal
     drawdown: Decimal
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            'timestamp': self.timestamp.isoformat(),
-            'equity': str(self.equity),
-            'realized_pnl': str(self.realized_pnl),
-            'unrealized_pnl': str(self.unrealized_pnl),
-            'cash': str(self.cash),
-            'drawdown': str(self.drawdown)
+            "timestamp": self.timestamp.isoformat(),
+            "equity": str(self.equity),
+            "realized_pnl": str(self.realized_pnl),
+            "unrealized_pnl": str(self.unrealized_pnl),
+            "cash": str(self.cash),
+            "drawdown": str(self.drawdown),
         }
 
 
@@ -47,7 +46,7 @@ class PnLTracker:
     - Performance metrics
     """
 
-    def __init__(self, initial_equity: Decimal = Decimal('100000')):
+    def __init__(self, initial_equity: Decimal = Decimal("100000")) -> None:
         """
         Initialize PnL tracker.
 
@@ -57,21 +56,17 @@ class PnLTracker:
         self.initial_equity = initial_equity
         self.peak_equity = initial_equity
 
-        self.snapshots: List[PnLSnapshot] = []
-        self.trades: List[Dict] = []
+        self.snapshots: list[PnLSnapshot] = []
+        self.trades: list[dict] = []
 
-        self.total_realized_pnl = Decimal('0')
-        self.total_unrealized_pnl = Decimal('0')
+        self.total_realized_pnl = Decimal("0")
+        self.total_unrealized_pnl = Decimal("0")
 
         logger.info(f"PnL tracker initialized with equity: ${initial_equity}")
 
     def add_snapshot(
-        self,
-        equity: Decimal,
-        realized_pnl: Decimal,
-        unrealized_pnl: Decimal,
-        cash: Decimal
-    ):
+        self, equity: Decimal, realized_pnl: Decimal, unrealized_pnl: Decimal, cash: Decimal
+    ) -> None:
         """
         Add equity snapshot.
 
@@ -82,11 +77,14 @@ class PnLTracker:
             cash: Cash balance
         """
         # Update peak
-        if equity > self.peak_equity:
-            self.peak_equity = equity
+        self.peak_equity = max(self.peak_equity, equity)
 
         # Calculate drawdown
-        drawdown = (self.peak_equity - equity) / self.peak_equity if self.peak_equity > Decimal('0') else Decimal('0')
+        drawdown = (
+            (self.peak_equity - equity) / self.peak_equity
+            if self.peak_equity > Decimal("0")
+            else Decimal("0")
+        )
 
         snapshot = PnLSnapshot(
             timestamp=datetime.now(),
@@ -94,7 +92,7 @@ class PnLTracker:
             realized_pnl=realized_pnl,
             unrealized_pnl=unrealized_pnl,
             cash=cash,
-            drawdown=drawdown
+            drawdown=drawdown,
         )
 
         self.snapshots.append(snapshot)
@@ -107,8 +105,8 @@ class PnLTracker:
         pnl: Decimal,
         quantity: Decimal,
         entry_price: Decimal,
-        exit_price: Decimal
-    ):
+        exit_price: Decimal,
+    ) -> None:
         """
         Record closed trade.
 
@@ -120,19 +118,23 @@ class PnLTracker:
             exit_price: Exit price
         """
         trade = {
-            'timestamp': datetime.now().isoformat(),
-            'symbol': symbol,
-            'pnl': str(pnl),
-            'quantity': str(quantity),
-            'entry_price': str(entry_price),
-            'exit_price': str(exit_price),
-            'return_pct': float((exit_price - entry_price) / entry_price * 100) if entry_price > Decimal('0') else 0.0
+            "timestamp": datetime.now().isoformat(),
+            "symbol": symbol,
+            "pnl": str(pnl),
+            "quantity": str(quantity),
+            "entry_price": str(entry_price),
+            "exit_price": str(exit_price),
+            "return_pct": (
+                float((exit_price - entry_price) / entry_price * 100)
+                if entry_price > Decimal("0")
+                else 0.0
+            ),
         }
 
         self.trades.append(trade)
         logger.info(f"Trade recorded: {symbol} PnL=${pnl}")
 
-    def get_equity_curve(self) -> List[Dict]:
+    def get_equity_curve(self) -> list[dict]:
         """
         Get equity curve data.
 
@@ -140,11 +142,10 @@ class PnLTracker:
             List of timestamp/equity pairs
         """
         return [
-            {'timestamp': s.timestamp.isoformat(), 'equity': str(s.equity)}
-            for s in self.snapshots
+            {"timestamp": s.timestamp.isoformat(), "equity": str(s.equity)} for s in self.snapshots
         ]
 
-    def get_drawdown_curve(self) -> List[Dict]:
+    def get_drawdown_curve(self) -> list[dict]:
         """
         Get drawdown curve data.
 
@@ -152,11 +153,11 @@ class PnLTracker:
             List of timestamp/drawdown pairs
         """
         return [
-            {'timestamp': s.timestamp.isoformat(), 'drawdown': str(s.drawdown)}
+            {"timestamp": s.timestamp.isoformat(), "drawdown": str(s.drawdown)}
             for s in self.snapshots
         ]
 
-    def get_performance_metrics(self) -> Dict:
+    def get_performance_metrics(self) -> dict:
         """
         Calculate performance metrics.
 
@@ -170,36 +171,38 @@ class PnLTracker:
         total_return = (current_equity - self.initial_equity) / self.initial_equity
 
         # Calculate max drawdown
-        max_drawdown = max([s.drawdown for s in self.snapshots], default=Decimal('0'))
+        max_drawdown = max([s.drawdown for s in self.snapshots], default=Decimal("0"))
 
         # Win rate
-        winning_trades = sum(1 for t in self.trades if Decimal(t['pnl']) > Decimal('0'))
+        winning_trades = sum(1 for t in self.trades if Decimal(t["pnl"]) > Decimal("0"))
         total_trades = len(self.trades)
         win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
 
         # Average win/loss
-        winning_pnls = [Decimal(t['pnl']) for t in self.trades if Decimal(t['pnl']) > Decimal('0')]
-        losing_pnls = [abs(Decimal(t['pnl'])) for t in self.trades if Decimal(t['pnl']) < Decimal('0')]
+        winning_pnls = [Decimal(t["pnl"]) for t in self.trades if Decimal(t["pnl"]) > Decimal("0")]
+        losing_pnls = [
+            abs(Decimal(t["pnl"])) for t in self.trades if Decimal(t["pnl"]) < Decimal("0")
+        ]
 
-        avg_win = sum(winning_pnls) / len(winning_pnls) if winning_pnls else Decimal('0')
-        avg_loss = sum(losing_pnls) / len(losing_pnls) if losing_pnls else Decimal('0')
+        avg_win = sum(winning_pnls) / len(winning_pnls) if winning_pnls else Decimal("0")
+        avg_loss = sum(losing_pnls) / len(losing_pnls) if losing_pnls else Decimal("0")
 
-        profit_factor = avg_win / avg_loss if avg_loss > Decimal('0') else Decimal('0')
+        profit_factor = avg_win / avg_loss if avg_loss > Decimal("0") else Decimal("0")
 
         return {
-            'initial_equity': str(self.initial_equity),
-            'current_equity': str(current_equity),
-            'total_return': f"{total_return:.2%}",
-            'total_return_dollar': str(current_equity - self.initial_equity),
-            'realized_pnl': str(self.total_realized_pnl),
-            'unrealized_pnl': str(self.total_unrealized_pnl),
-            'max_drawdown': f"{max_drawdown:.2%}",
-            'peak_equity': str(self.peak_equity),
-            'total_trades': total_trades,
-            'winning_trades': winning_trades,
-            'losing_trades': total_trades - winning_trades,
-            'win_rate': f"{win_rate:.2%}",
-            'avg_win': str(avg_win),
-            'avg_loss': str(avg_loss),
-            'profit_factor': str(profit_factor)
+            "initial_equity": str(self.initial_equity),
+            "current_equity": str(current_equity),
+            "total_return": f"{total_return:.2%}",
+            "total_return_dollar": str(current_equity - self.initial_equity),
+            "realized_pnl": str(self.total_realized_pnl),
+            "unrealized_pnl": str(self.total_unrealized_pnl),
+            "max_drawdown": f"{max_drawdown:.2%}",
+            "peak_equity": str(self.peak_equity),
+            "total_trades": total_trades,
+            "winning_trades": winning_trades,
+            "losing_trades": total_trades - winning_trades,
+            "win_rate": f"{win_rate:.2%}",
+            "avg_win": str(avg_win),
+            "avg_loss": str(avg_loss),
+            "profit_factor": str(profit_factor),
         }

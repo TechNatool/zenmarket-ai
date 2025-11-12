@@ -3,12 +3,11 @@ Sentiment analyzer for ZenMarket AI.
 Analyzes sentiment of news articles using multiple methods.
 """
 
-from typing import List, Dict, Optional, Tuple
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
+from src.utils.config_loader import get_config
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -29,28 +28,103 @@ class SentimentAnalyzer:
 
     # Financial sentiment lexicon (simplified)
     POSITIVE_WORDS = {
-        "gain", "gains", "up", "rise", "rises", "rising", "surge", "surges", "surging",
-        "rally", "rallies", "rallying", "growth", "profit", "profits", "profitable",
-        "boom", "booming", "bullish", "beat", "beats", "outperform", "strong", "stronger",
-        "increase", "increases", "increasing", "improve", "improves", "improving",
-        "recovery", "recovers", "optimistic", "optimism", "positive", "success",
-        "advance", "advances", "advancing", "soar", "soars", "soaring", "breakthrough"
+        "gain",
+        "gains",
+        "up",
+        "rise",
+        "rises",
+        "rising",
+        "surge",
+        "surges",
+        "surging",
+        "rally",
+        "rallies",
+        "rallying",
+        "growth",
+        "profit",
+        "profits",
+        "profitable",
+        "boom",
+        "booming",
+        "bullish",
+        "beat",
+        "beats",
+        "outperform",
+        "strong",
+        "stronger",
+        "increase",
+        "increases",
+        "increasing",
+        "improve",
+        "improves",
+        "improving",
+        "recovery",
+        "recovers",
+        "optimistic",
+        "optimism",
+        "positive",
+        "success",
+        "advance",
+        "advances",
+        "advancing",
+        "soar",
+        "soars",
+        "soaring",
+        "breakthrough",
     }
 
     NEGATIVE_WORDS = {
-        "loss", "losses", "down", "fall", "falls", "falling", "drop", "drops", "dropping",
-        "decline", "declines", "declining", "crash", "crashes", "crashing", "plunge",
-        "plunges", "plunging", "bearish", "miss", "misses", "underperform", "weak",
-        "weaker", "decrease", "decreases", "decreasing", "worsen", "worsens", "worsening",
-        "recession", "pessimistic", "pessimism", "negative", "failure", "risk", "risks",
-        "threat", "threatens", "concern", "concerns", "worry", "worries", "turmoil"
+        "loss",
+        "losses",
+        "down",
+        "fall",
+        "falls",
+        "falling",
+        "drop",
+        "drops",
+        "dropping",
+        "decline",
+        "declines",
+        "declining",
+        "crash",
+        "crashes",
+        "crashing",
+        "plunge",
+        "plunges",
+        "plunging",
+        "bearish",
+        "miss",
+        "misses",
+        "underperform",
+        "weak",
+        "weaker",
+        "decrease",
+        "decreases",
+        "decreasing",
+        "worsen",
+        "worsens",
+        "worsening",
+        "recession",
+        "pessimistic",
+        "pessimism",
+        "negative",
+        "failure",
+        "risk",
+        "risks",
+        "threat",
+        "threatens",
+        "concern",
+        "concerns",
+        "worry",
+        "worries",
+        "turmoil",
     }
 
     # Sentiment modifiers
     INTENSIFIERS = {"very", "extremely", "highly", "significantly", "substantially"}
     NEGATIONS = {"not", "no", "never", "neither", "hardly", "barely"}
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize sentiment analyzer."""
         self.config = get_config()
 
@@ -65,7 +139,7 @@ class SentimentAnalyzer:
             SentimentResult
         """
         # Tokenize and lowercase
-        words = re.findall(r'\b\w+\b', text.lower())
+        words = re.findall(r"\b\w+\b", text.lower())
 
         positive_count = 0
         negative_count = 0
@@ -78,12 +152,12 @@ class SentimentAnalyzer:
 
             # Check for negation
             is_negated = False
-            if i > 0 and words[i-1] in self.NEGATIONS:
+            if i > 0 and words[i - 1] in self.NEGATIONS:
                 is_negated = True
 
             # Check for intensifier
             intensifier_boost = 1.0
-            if i > 0 and words[i-1] in self.INTENSIFIERS:
+            if i > 0 and words[i - 1] in self.INTENSIFIERS:
                 intensifier_boost = 1.5
 
             # Count sentiment
@@ -128,10 +202,10 @@ class SentimentAnalyzer:
             sentiment=sentiment,
             score=score,
             confidence=confidence,
-            method="lexicon"
+            method="lexicon",
         )
 
-    def analyze_with_ai(self, text: str) -> Optional[SentimentResult]:
+    def analyze_with_ai(self, text: str) -> SentimentResult | None:
         """
         Analyze sentiment using AI (OpenAI or Anthropic).
 
@@ -144,14 +218,13 @@ class SentimentAnalyzer:
         try:
             if self.config.ai_provider == "openai" and self.config.openai_api_key:
                 return self._analyze_with_openai(text)
-            elif self.config.ai_provider == "anthropic" and self.config.anthropic_api_key:
+            if self.config.ai_provider == "anthropic" and self.config.anthropic_api_key:
                 return self._analyze_with_anthropic(text)
-            else:
-                logger.warning("No AI provider configured for sentiment analysis")
-                return None
+            logger.warning("No AI provider configured for sentiment analysis")
+            return None
 
         except Exception as e:
-            logger.error(f"Error in AI sentiment analysis: {e}")
+            logger.exception(f"Error in AI sentiment analysis: {e}")
             return None
 
     def _analyze_with_openai(self, text: str) -> SentimentResult:
@@ -171,10 +244,11 @@ Response format:
             model=self.config.openai_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
-            max_tokens=100
+            max_tokens=100,
         )
 
         import json
+
         result = json.loads(response.choices[0].message.content.strip())
 
         return SentimentResult(
@@ -182,7 +256,7 @@ Response format:
             sentiment=result["sentiment"],
             score=float(result["score"]),
             confidence=float(result["confidence"]),
-            method="openai"
+            method="openai",
         )
 
     def _analyze_with_anthropic(self, text: str) -> SentimentResult:
@@ -202,10 +276,11 @@ Response format:
             model=self.config.anthropic_model,
             max_tokens=100,
             temperature=0.0,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         import json
+
         result = json.loads(message.content[0].text.strip())
 
         return SentimentResult(
@@ -213,7 +288,7 @@ Response format:
             sentiment=result["sentiment"],
             score=float(result["score"]),
             confidence=float(result["confidence"]),
-            method="anthropic"
+            method="anthropic",
         )
 
     def analyze(self, text: str, use_ai: bool = False) -> SentimentResult:
@@ -235,11 +310,7 @@ Response format:
         # Fallback to lexicon
         return self.analyze_lexicon(text)
 
-    def analyze_batch(
-        self,
-        texts: List[str],
-        use_ai: bool = False
-    ) -> List[SentimentResult]:
+    def analyze_batch(self, texts: list[str], use_ai: bool = False) -> list[SentimentResult]:
         """
         Analyze multiple texts.
 
@@ -261,22 +332,21 @@ Response format:
                     logger.info(f"Analyzed sentiment for {i + 1}/{len(texts)} texts")
 
             except Exception as e:
-                logger.error(f"Error analyzing text {i}: {e}")
+                logger.exception(f"Error analyzing text {i}: {e}")
                 # Create neutral result as fallback
-                results.append(SentimentResult(
-                    text=text[:100],
-                    sentiment="neutral",
-                    score=0.0,
-                    confidence=0.0,
-                    method="error"
-                ))
+                results.append(
+                    SentimentResult(
+                        text=text[:100],
+                        sentiment="neutral",
+                        score=0.0,
+                        confidence=0.0,
+                        method="error",
+                    )
+                )
 
         return results
 
-    def get_overall_sentiment(
-        self,
-        results: List[SentimentResult]
-    ) -> Tuple[str, float]:
+    def get_overall_sentiment(self, results: list[SentimentResult]) -> tuple[str, float]:
         """
         Calculate overall sentiment from multiple results.
 
@@ -293,10 +363,7 @@ Response format:
         total_weighted_score = sum(r.score * r.confidence for r in results)
         total_confidence = sum(r.confidence for r in results)
 
-        if total_confidence == 0:
-            avg_score = 0.0
-        else:
-            avg_score = total_weighted_score / total_confidence
+        avg_score = 0.0 if total_confidence == 0 else total_weighted_score / total_confidence
 
         # Determine label
         if avg_score > 0.2:
@@ -309,10 +376,7 @@ Response format:
         logger.info(f"Overall sentiment: {sentiment} (score: {avg_score:.3f})")
         return sentiment, avg_score
 
-    def get_sentiment_distribution(
-        self,
-        results: List[SentimentResult]
-    ) -> Dict[str, int]:
+    def get_sentiment_distribution(self, results: list[SentimentResult]) -> dict[str, int]:
         """
         Get distribution of sentiments.
 

@@ -3,14 +3,14 @@ Risk manager with circuit breakers and safety mechanisms.
 Implements kill-switches, position limits, and risk validation.
 """
 
-from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime
+from decimal import Decimal
 
-from .order_types import Order, Position, OrderSide
+from src.utils.logger import get_logger
+
 from .broker_base import BrokerBase
-from ..utils.logger import get_logger
+from .order_types import OrderSide, Position
 
 logger = get_logger(__name__)
 
@@ -21,12 +21,12 @@ class RiskLimits:
 
     # Per-trade limits
     max_risk_per_trade_pct: float = 0.01  # 1%
-    max_position_size_pct: float = 0.20   # 20% of equity per position
+    max_position_size_pct: float = 0.20  # 20% of equity per position
 
     # Daily limits
-    max_risk_per_day_pct: float = 0.03    # 3%
+    max_risk_per_day_pct: float = 0.03  # 3%
     max_daily_drawdown_pct: float = 0.05  # 5%
-    max_daily_loss_dollar: Optional[Decimal] = None
+    max_daily_loss_dollar: Decimal | None = None
 
     # Position limits
     max_open_positions: int = 5
@@ -38,18 +38,20 @@ class RiskLimits:
     # Volatility limits
     max_atr_multiplier: float = 3.0  # Stop trading if ATR > 3x average
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            'max_risk_per_trade_pct': self.max_risk_per_trade_pct,
-            'max_position_size_pct': self.max_position_size_pct,
-            'max_risk_per_day_pct': self.max_risk_per_day_pct,
-            'max_daily_drawdown_pct': self.max_daily_drawdown_pct,
-            'max_daily_loss_dollar': str(self.max_daily_loss_dollar) if self.max_daily_loss_dollar else None,
-            'max_open_positions': self.max_open_positions,
-            'max_correlated_positions': self.max_correlated_positions,
-            'max_consecutive_losses': self.max_consecutive_losses,
-            'max_atr_multiplier': self.max_atr_multiplier
+            "max_risk_per_trade_pct": self.max_risk_per_trade_pct,
+            "max_position_size_pct": self.max_position_size_pct,
+            "max_risk_per_day_pct": self.max_risk_per_day_pct,
+            "max_daily_drawdown_pct": self.max_daily_drawdown_pct,
+            "max_daily_loss_dollar": (
+                str(self.max_daily_loss_dollar) if self.max_daily_loss_dollar else None
+            ),
+            "max_open_positions": self.max_open_positions,
+            "max_correlated_positions": self.max_correlated_positions,
+            "max_consecutive_losses": self.max_consecutive_losses,
+            "max_atr_multiplier": self.max_atr_multiplier,
         }
 
 
@@ -58,7 +60,7 @@ class RiskState:
     """Current risk state tracking."""
 
     # Daily tracking
-    daily_pnl: Decimal = Decimal('0')
+    daily_pnl: Decimal = Decimal("0")
     daily_risk_used_pct: float = 0.0
     trades_today: int = 0
     losses_today: int = 0
@@ -69,47 +71,47 @@ class RiskState:
 
     # Circuit breaker status
     trading_halted: bool = False
-    halt_reason: Optional[str] = None
-    halt_timestamp: Optional[datetime] = None
+    halt_reason: str | None = None
+    halt_timestamp: datetime | None = None
 
     # Daily reset
     last_reset_date: datetime = field(default_factory=lambda: datetime.now().date())
 
-    def reset_daily(self):
+    def reset_daily(self) -> None:
         """Reset daily counters."""
-        self.daily_pnl = Decimal('0')
+        self.daily_pnl = Decimal("0")
         self.daily_risk_used_pct = 0.0
         self.trades_today = 0
         self.losses_today = 0
         self.last_reset_date = datetime.now().date()
         logger.info("Daily risk state reset")
 
-    def halt_trading(self, reason: str):
+    def halt_trading(self, reason: str) -> None:
         """Halt trading with reason."""
         self.trading_halted = True
         self.halt_reason = reason
         self.halt_timestamp = datetime.now()
         logger.critical(f"🚨 TRADING HALTED: {reason}")
 
-    def resume_trading(self):
+    def resume_trading(self) -> None:
         """Resume trading."""
         self.trading_halted = False
         self.halt_reason = None
         self.halt_timestamp = None
         logger.info("Trading resumed")
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            'daily_pnl': str(self.daily_pnl),
-            'daily_risk_used_pct': self.daily_risk_used_pct,
-            'trades_today': self.trades_today,
-            'losses_today': self.losses_today,
-            'consecutive_losses': self.consecutive_losses,
-            'consecutive_wins': self.consecutive_wins,
-            'trading_halted': self.trading_halted,
-            'halt_reason': self.halt_reason,
-            'halt_timestamp': self.halt_timestamp.isoformat() if self.halt_timestamp else None
+            "daily_pnl": str(self.daily_pnl),
+            "daily_risk_used_pct": self.daily_risk_used_pct,
+            "trades_today": self.trades_today,
+            "losses_today": self.losses_today,
+            "consecutive_losses": self.consecutive_losses,
+            "consecutive_wins": self.consecutive_wins,
+            "trading_halted": self.trading_halted,
+            "halt_reason": self.halt_reason,
+            "halt_timestamp": self.halt_timestamp.isoformat() if self.halt_timestamp else None,
         }
 
 
@@ -125,11 +127,7 @@ class RiskManager:
     - Consecutive loss protection
     """
 
-    def __init__(
-        self,
-        broker: BrokerBase,
-        limits: Optional[RiskLimits] = None
-    ):
+    def __init__(self, broker: BrokerBase, limits: RiskLimits | None = None) -> None:
         """
         Initialize risk manager.
 
@@ -145,7 +143,7 @@ class RiskManager:
         self.logger.info("Risk manager initialized")
         self.logger.info(f"Limits: {self.limits.to_dict()}")
 
-    def check_daily_reset(self):
+    def check_daily_reset(self) -> None:
         """Check if daily counters need reset."""
         today = datetime.now().date()
 
@@ -158,8 +156,8 @@ class RiskManager:
         side: OrderSide,
         quantity: Decimal,
         entry_price: Decimal,
-        stop_loss: Optional[Decimal] = None
-    ) -> Tuple[bool, Optional[str]]:
+        stop_loss: Decimal | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Validate order against risk limits.
 
@@ -183,7 +181,7 @@ class RiskManager:
         account = self.broker.get_account()
         equity = account.equity
 
-        if equity <= Decimal('0'):
+        if equity <= Decimal("0"):
             return False, "Account equity is zero or negative"
 
         # Calculate position value
@@ -231,9 +229,7 @@ class RiskManager:
 
         # 5. Check daily drawdown
         if account.max_drawdown >= Decimal(str(self.limits.max_daily_drawdown_pct)):
-            self.state.halt_trading(
-                f"Daily drawdown limit reached: {account.max_drawdown:.2%}"
-            )
+            self.state.halt_trading(f"Daily drawdown limit reached: {account.max_drawdown:.2%}")
             return False, self.state.halt_reason
 
         # 6. Check consecutive losses
@@ -246,34 +242,23 @@ class RiskManager:
         # 7. Check daily loss dollar limit
         if self.limits.max_daily_loss_dollar:
             if self.state.daily_pnl < -abs(self.limits.max_daily_loss_dollar):
-                self.state.halt_trading(
-                    f"Daily loss limit reached: ${self.state.daily_pnl}"
-                )
+                self.state.halt_trading(f"Daily loss limit reached: ${self.state.daily_pnl}")
                 return False, self.state.halt_reason
 
         # All checks passed
         return True, None
 
-    def _is_closing_order(
-        self,
-        symbol: str,
-        side: OrderSide,
-        positions: List[Position]
-    ) -> bool:
+    def _is_closing_order(self, symbol: str, side: OrderSide, positions: list[Position]) -> bool:
         """Check if order would close an existing position."""
         for position in positions:
             if position.symbol == symbol:
-                if side == OrderSide.SELL and position.quantity > Decimal('0'):
+                if side == OrderSide.SELL and position.quantity > Decimal("0"):
                     return True  # Closing long
-                if side == OrderSide.BUY and position.quantity < Decimal('0'):
+                if side == OrderSide.BUY and position.quantity < Decimal("0"):
                     return True  # Closing short
         return False
 
-    def record_trade_result(
-        self,
-        pnl: Decimal,
-        risk_pct: float
-    ):
+    def record_trade_result(self, pnl: Decimal, risk_pct: float) -> None:
         """
         Record trade result and update state.
 
@@ -289,14 +274,13 @@ class RiskManager:
         self.state.trades_today += 1
 
         # Update consecutive counters
-        if pnl < Decimal('0'):
+        if pnl < Decimal("0"):
             self.state.losses_today += 1
             self.state.consecutive_losses += 1
             self.state.consecutive_wins = 0
 
             self.logger.warning(
-                f"Trade loss: ${pnl} | "
-                f"Consecutive losses: {self.state.consecutive_losses}"
+                f"Trade loss: ${pnl} | " f"Consecutive losses: {self.state.consecutive_losses}"
             )
 
         else:
@@ -304,14 +288,13 @@ class RiskManager:
             self.state.consecutive_losses = 0
 
             self.logger.info(
-                f"Trade win: ${pnl} | "
-                f"Consecutive wins: {self.state.consecutive_wins}"
+                f"Trade win: ${pnl} | " f"Consecutive wins: {self.state.consecutive_wins}"
             )
 
         # Check circuit breakers
         self._check_circuit_breakers()
 
-    def _check_circuit_breakers(self):
+    def _check_circuit_breakers(self) -> None:
         """Check all circuit breakers."""
 
         # Daily drawdown breaker
@@ -336,7 +319,7 @@ class RiskManager:
                     f"${self.limits.max_daily_loss_dollar}"
                 )
 
-    def get_risk_summary(self) -> Dict:
+    def get_risk_summary(self) -> dict:
         """
         Get risk summary.
 
@@ -349,24 +332,18 @@ class RiskManager:
         positions = self.broker.get_positions()
 
         return {
-            'limits': self.limits.to_dict(),
-            'state': self.state.to_dict(),
-            'account': {
-                'equity': str(account.equity),
-                'drawdown': f"{account.max_drawdown:.2%}"
+            "limits": self.limits.to_dict(),
+            "state": self.state.to_dict(),
+            "account": {"equity": str(account.equity), "drawdown": f"{account.max_drawdown:.2%}"},
+            "positions": {"count": len(positions), "max": self.limits.max_open_positions},
+            "daily": {
+                "pnl": str(self.state.daily_pnl),
+                "trades": self.state.trades_today,
+                "risk_used": f"{self.state.daily_risk_used_pct:.2%}",
             },
-            'positions': {
-                'count': len(positions),
-                'max': self.limits.max_open_positions
-            },
-            'daily': {
-                'pnl': str(self.state.daily_pnl),
-                'trades': self.state.trades_today,
-                'risk_used': f"{self.state.daily_risk_used_pct:.2%}"
-            }
         }
 
-    def force_halt(self, reason: str):
+    def force_halt(self, reason: str) -> None:
         """
         Manually halt trading.
 
@@ -375,16 +352,14 @@ class RiskManager:
         """
         self.state.halt_trading(reason)
 
-    def force_resume(self):
+    def force_resume(self) -> None:
         """Manually resume trading (use with caution)."""
         self.logger.warning("Manually resuming trading")
         self.state.resume_trading()
 
     def check_volatility_limit(
-        self,
-        current_atr: float,
-        average_atr: float
-    ) -> Tuple[bool, Optional[str]]:
+        self, current_atr: float, average_atr: float
+    ) -> tuple[bool, str | None]:
         """
         Check if volatility is within acceptable limits.
 
