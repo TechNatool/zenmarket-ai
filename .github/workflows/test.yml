@@ -35,7 +35,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip setuptools wheel
         # Install project with dev dependencies
-        pip install -e ".[dev]"
+        pip install -e .[dev]
         # Install Phase 4 optional dependencies (cross-platform)
         pip install scipy reportlab tabulate
         # Install broker integration packages with platform awareness
@@ -45,12 +45,10 @@ jobs:
           pip install MetaTrader5 || echo "MetaTrader5 not available"
         fi
 
-    - name: Lint with flake8
+    - name: Lint with ruff
       run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        python -m flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        python -m flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+        # Ruff checks for syntax errors, style issues, and code quality
+        python -m ruff check src/ tests/
 
     - name: Check code formatting with black
       run: |
@@ -149,7 +147,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install -e ".[dev]"
+        pip install -e .[dev]
         # Install Phase 4 optional dependencies
         pip install scipy reportlab tabulate
         pip install ib-insync || echo "ib-insync not available"
