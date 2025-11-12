@@ -262,10 +262,8 @@ class MT5Adapter(BrokerBase):
         # MT5 cancel implementation
         # Note: Filled orders cannot be cancelled
         order = self._orders.get(order_id)
-        if order and order.status == OrderStatus.PENDING:
-            # Would implement MT5 order cancellation here
-            return True
-        return False
+        # Would implement MT5 order cancellation here
+        return bool(order and order.status == OrderStatus.PENDING)
 
     def get_order(self, order_id: str) -> Order | None:
         """Get order by ID."""

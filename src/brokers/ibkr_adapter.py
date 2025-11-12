@@ -21,9 +21,8 @@ from decimal import Decimal
 from typing import Any
 
 try:
-    from ib_insync import IB, Contract, LimitOrder, MarketOrder
+    from ib_insync import IB, Contract, LimitOrder, MarketOrder, Stock
     from ib_insync import Order as IBOrder
-    from ib_insync import Stock
 except ImportError:
     # Graceful degradation if ib_insync not installed
     IB = None  # type: ignore
