@@ -3,11 +3,8 @@ AI-powered summarizer for ZenMarket AI.
 Generates summaries and insights using LLMs.
 """
 
-from typing import List, Dict, Optional
-import time
-
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
+from src.utils.config_loader import get_config
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -15,7 +12,7 @@ logger = get_logger(__name__)
 class AISummarizer:
     """AI-powered text summarizer and insight generator."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize summarizer."""
         self.config = get_config()
 
@@ -34,15 +31,14 @@ class AISummarizer:
         try:
             if self.config.ai_provider == "openai":
                 return self._summarize_with_openai(title, content, max_words)
-            elif self.config.ai_provider == "anthropic":
+            if self.config.ai_provider == "anthropic":
                 return self._summarize_with_anthropic(title, content, max_words)
-            else:
-                # Fallback: truncate content
-                words = content.split()[:max_words]
-                return " ".join(words) + "..."
+            # Fallback: truncate content
+            words = content.split()[:max_words]
+            return " ".join(words) + "..."
 
         except Exception as e:
-            logger.error(f"Error summarizing article: {e}")
+            logger.exception(f"Error summarizing article: {e}")
             # Return truncated content as fallback
             words = content.split()[:max_words]
             return " ".join(words) + "..."
@@ -64,7 +60,7 @@ Summary:"""
             model=self.config.openai_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=max_words * 2
+            max_tokens=max_words * 2,
         )
 
         summary = response.choices[0].message.content.strip()
@@ -88,7 +84,7 @@ Summary:"""
             model=self.config.anthropic_model,
             max_tokens=max_words * 2,
             temperature=0.3,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         summary = message.content[0].text.strip()
@@ -96,10 +92,7 @@ Summary:"""
         return summary
 
     def generate_market_insights(
-        self,
-        news_summaries: List[str],
-        market_data: Dict,
-        sentiment_overall: str
+        self, news_summaries: list[str], market_data: dict, sentiment_overall: str
     ) -> str:
         """
         Generate AI insights about current market conditions.
@@ -116,27 +109,29 @@ Summary:"""
             # Prepare context
             news_context = "\n".join([f"- {summary}" for summary in news_summaries[:10]])
 
-            market_context = "\n".join([
-                f"- {data['name']}: {data['last_price']:.2f} ({data['change_percent']:+.2f}%)"
-                for ticker, data in list(market_data.items())[:5]
-            ])
+            market_context = "\n".join(
+                [
+                    f"- {data['name']}: {data['last_price']:.2f} ({data['change_percent']:+.2f}%)"
+                    for ticker, data in list(market_data.items())[:5]
+                ]
+            )
 
             if self.config.ai_provider == "openai":
-                return self._generate_insights_openai(news_context, market_context, sentiment_overall)
-            elif self.config.ai_provider == "anthropic":
-                return self._generate_insights_anthropic(news_context, market_context, sentiment_overall)
-            else:
-                return self._generate_fallback_insights(sentiment_overall)
+                return self._generate_insights_openai(
+                    news_context, market_context, sentiment_overall
+                )
+            if self.config.ai_provider == "anthropic":
+                return self._generate_insights_anthropic(
+                    news_context, market_context, sentiment_overall
+                )
+            return self._generate_fallback_insights(sentiment_overall)
 
         except Exception as e:
-            logger.error(f"Error generating insights: {e}")
+            logger.exception(f"Error generating insights: {e}")
             return self._generate_fallback_insights(sentiment_overall)
 
     def _generate_insights_openai(
-        self,
-        news_context: str,
-        market_context: str,
-        sentiment: str
+        self, news_context: str, market_context: str, sentiment: str
     ) -> str:
         """Generate insights with OpenAI."""
         import openai
@@ -159,7 +154,7 @@ Provide concise, actionable insights:"""
             model=self.config.openai_model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
-            max_tokens=200
+            max_tokens=200,
         )
 
         insights = response.choices[0].message.content.strip()
@@ -167,10 +162,7 @@ Provide concise, actionable insights:"""
         return insights
 
     def _generate_insights_anthropic(
-        self,
-        news_context: str,
-        market_context: str,
-        sentiment: str
+        self, news_context: str, market_context: str, sentiment: str
     ) -> str:
         """Generate insights with Anthropic Claude."""
         import anthropic
@@ -193,7 +185,7 @@ Provide concise, actionable insights:"""
             model=self.config.anthropic_model,
             max_tokens=200,
             temperature=0.5,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         insights = message.content[0].text.strip()
@@ -205,12 +197,12 @@ Provide concise, actionable insights:"""
         insights = {
             "positive": "Market sentiment appears optimistic based on recent news. Consider monitoring key support levels for potential entry points.",
             "negative": "Market sentiment shows concern. Exercise caution and consider defensive positions or wait for stabilization signals.",
-            "neutral": "Markets show mixed signals. Maintain balanced positions and watch for clearer directional trends."
+            "neutral": "Markets show mixed signals. Maintain balanced positions and watch for clearer directional trends.",
         }
 
         return insights.get(sentiment, insights["neutral"])
 
-    def categorize_news(self, articles: List[Dict]) -> Dict[str, List[Dict]]:
+    def categorize_news(self, articles: list[dict]) -> dict[str, list[dict]]:
         """
         Categorize news articles into themes.
 
@@ -228,7 +220,7 @@ Provide concise, actionable insights:"""
             "crypto": [],
             "earnings": [],
             "geopolitics": [],
-            "other": []
+            "other": [],
         }
 
         keywords = {
@@ -238,7 +230,7 @@ Provide concise, actionable insights:"""
             "forex": ["forex", "dollar", "euro", "currency", "fx"],
             "crypto": ["bitcoin", "crypto", "ethereum", "blockchain"],
             "earnings": ["earnings", "revenue", "profit", "quarter", "q1", "q2", "q3", "q4"],
-            "geopolitics": ["war", "conflict", "sanction", "trade", "tariff", "politics"]
+            "geopolitics": ["war", "conflict", "sanction", "trade", "tariff", "politics"],
         }
 
         for article in articles:
@@ -262,11 +254,8 @@ Provide concise, actionable insights:"""
         return categories
 
     def generate_recommendations(
-        self,
-        market_data: Dict,
-        sentiment: str,
-        news_categories: Dict
-    ) -> List[str]:
+        self, market_data: dict, sentiment: str, news_categories: dict
+    ) -> list[str]:
         """
         Generate trading recommendations or watchpoints.
 
@@ -282,14 +271,19 @@ Provide concise, actionable insights:"""
 
         # Based on sentiment
         if sentiment == "positive":
-            recommendations.append("Markets showing positive momentum. Consider long positions on major indices.")
+            recommendations.append(
+                "Markets showing positive momentum. Consider long positions on major indices."
+            )
         elif sentiment == "negative":
-            recommendations.append("Defensive positioning recommended. Consider hedging strategies or cash positions.")
+            recommendations.append(
+                "Defensive positioning recommended. Consider hedging strategies or cash positions."
+            )
 
         # Based on volatility
         high_vol_markets = [
-            name for ticker, data in market_data.items()
-            if data.get('volatility') and data['volatility'] > 25
+            ticker
+            for ticker, data in market_data.items()
+            if data.get("volatility") and data["volatility"] > 25
         ]
 
         if high_vol_markets:
@@ -316,6 +310,8 @@ Provide concise, actionable insights:"""
 
         # Default if no specific recommendations
         if not recommendations:
-            recommendations.append("No major catalysts detected. Maintain current positions and monitor for developments.")
+            recommendations.append(
+                "No major catalysts detected. Maintain current positions and monitor for developments."
+            )
 
         return recommendations[:5]  # Limit to 5 recommendations

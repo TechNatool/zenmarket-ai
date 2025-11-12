@@ -3,12 +3,12 @@ Technical indicators calculator for AI Trading Advisor.
 Computes moving averages, RSI, Bollinger Bands, and volume indicators.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
 
-from ..utils.logger import get_logger
+import numpy as np
+import pandas as pd
+
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,32 +26,31 @@ class TechnicalIndicators:
     bb_middle: float
     bb_lower: float
     volume_avg: float
-    current_volume: Optional[float] = None
-    atr: Optional[float] = None
+    current_volume: float | None = None
+    atr: float | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
-            'ticker': self.ticker,
-            'current_price': self.current_price,
-            'ma_20': self.ma_20,
-            'ma_50': self.ma_50,
-            'rsi': self.rsi,
-            'bb_upper': self.bb_upper,
-            'bb_middle': self.bb_middle,
-            'bb_lower': self.bb_lower,
-            'volume_avg': self.volume_avg,
-            'current_volume': self.current_volume,
-            'atr': self.atr
+            "ticker": self.ticker,
+            "current_price": self.current_price,
+            "ma_20": self.ma_20,
+            "ma_50": self.ma_50,
+            "rsi": self.rsi,
+            "bb_upper": self.bb_upper,
+            "bb_middle": self.bb_middle,
+            "bb_lower": self.bb_lower,
+            "volume_avg": self.volume_avg,
+            "current_volume": self.current_volume,
+            "atr": self.atr,
         }
 
 
 class IndicatorCalculator:
     """Calculates technical indicators from price data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize indicator calculator."""
-        pass
 
     def calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
         """
@@ -71,20 +70,15 @@ class IndicatorCalculator:
             loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
 
             rs = gain / loss
-            rsi = 100 - (100 / (1 + rs))
-
-            return rsi
+            return 100 - (100 / (1 + rs))
 
         except Exception as e:
-            logger.error(f"Error calculating RSI: {e}")
+            logger.exception(f"Error calculating RSI: {e}")
             return pd.Series([50] * len(prices), index=prices.index)
 
     def calculate_bollinger_bands(
-        self,
-        prices: pd.Series,
-        period: int = 20,
-        std_dev: float = 2.0
-    ) -> Tuple[pd.Series, pd.Series, pd.Series]:
+        self, prices: pd.Series, period: int = 20, std_dev: float = 2.0
+    ) -> tuple[pd.Series, pd.Series, pd.Series]:
         """
         Calculate Bollinger Bands.
 
@@ -106,11 +100,13 @@ class IndicatorCalculator:
             return upper_band, middle_band, lower_band
 
         except Exception as e:
-            logger.error(f"Error calculating Bollinger Bands: {e}")
+            logger.exception(f"Error calculating Bollinger Bands: {e}")
             middle = pd.Series([prices.mean()] * len(prices), index=prices.index)
             return middle, middle, middle
 
-    def calculate_atr(self, high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    def calculate_atr(
+        self, high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14
+    ) -> pd.Series:
         """
         Calculate Average True Range (ATR).
 
@@ -129,12 +125,10 @@ class IndicatorCalculator:
             low_close = np.abs(low - close.shift())
 
             true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-            atr = true_range.rolling(window=period).mean()
-
-            return atr
+            return true_range.rolling(window=period).mean()
 
         except Exception as e:
-            logger.error(f"Error calculating ATR: {e}")
+            logger.exception(f"Error calculating ATR: {e}")
             return pd.Series([0] * len(high), index=high.index)
 
     def calculate_all_indicators(
@@ -145,8 +139,8 @@ class IndicatorCalculator:
         ma_long: int = 50,
         rsi_period: int = 14,
         bb_period: int = 20,
-        volume_period: int = 10
-    ) -> Optional[TechnicalIndicators]:
+        volume_period: int = 10,
+    ) -> TechnicalIndicators | None:
         """
         Calculate all technical indicators for a given dataframe.
 
@@ -172,10 +166,10 @@ class IndicatorCalculator:
                 return None
 
             # Get close prices
-            close = df['Close']
-            high = df['High']
-            low = df['Low']
-            volume = df.get('Volume', pd.Series([0] * len(df)))
+            close = df["Close"]
+            high = df["High"]
+            low = df["Low"]
+            volume = df.get("Volume", pd.Series([0] * len(df)))
 
             # Current values
             current_price = float(close.iloc[-1])
@@ -204,12 +198,26 @@ class IndicatorCalculator:
                 ma_20=float(ma_20.iloc[-1]) if not pd.isna(ma_20.iloc[-1]) else current_price,
                 ma_50=float(ma_50.iloc[-1]) if not pd.isna(ma_50.iloc[-1]) else current_price,
                 rsi=float(rsi_series.iloc[-1]) if not pd.isna(rsi_series.iloc[-1]) else 50.0,
-                bb_upper=float(bb_upper.iloc[-1]) if not pd.isna(bb_upper.iloc[-1]) else current_price * 1.02,
-                bb_middle=float(bb_middle.iloc[-1]) if not pd.isna(bb_middle.iloc[-1]) else current_price,
-                bb_lower=float(bb_lower.iloc[-1]) if not pd.isna(bb_lower.iloc[-1]) else current_price * 0.98,
-                volume_avg=float(volume_avg_series.iloc[-1]) if not pd.isna(volume_avg_series.iloc[-1]) else 0,
+                bb_upper=(
+                    float(bb_upper.iloc[-1])
+                    if not pd.isna(bb_upper.iloc[-1])
+                    else current_price * 1.02
+                ),
+                bb_middle=(
+                    float(bb_middle.iloc[-1]) if not pd.isna(bb_middle.iloc[-1]) else current_price
+                ),
+                bb_lower=(
+                    float(bb_lower.iloc[-1])
+                    if not pd.isna(bb_lower.iloc[-1])
+                    else current_price * 0.98
+                ),
+                volume_avg=(
+                    float(volume_avg_series.iloc[-1])
+                    if not pd.isna(volume_avg_series.iloc[-1])
+                    else 0
+                ),
                 current_volume=current_volume,
-                atr=float(atr_series.iloc[-1]) if not pd.isna(atr_series.iloc[-1]) else None
+                atr=float(atr_series.iloc[-1]) if not pd.isna(atr_series.iloc[-1]) else None,
             )
 
             logger.info(
@@ -235,17 +243,21 @@ class IndicatorCalculator:
             Summary string
         """
         ma_trend = "bullish" if indicators.ma_20 > indicators.ma_50 else "bearish"
-        rsi_level = "overbought" if indicators.rsi > 70 else "oversold" if indicators.rsi < 30 else "neutral"
+        rsi_level = (
+            "overbought"
+            if indicators.rsi > 70
+            else "oversold" if indicators.rsi < 30 else "neutral"
+        )
 
         # Position relative to Bollinger Bands
-        bb_position = "above upper" if indicators.current_price > indicators.bb_upper else \
-                      "below lower" if indicators.current_price < indicators.bb_lower else \
-                      "within bands"
+        bb_position = (
+            "above upper"
+            if indicators.current_price > indicators.bb_upper
+            else "below lower" if indicators.current_price < indicators.bb_lower else "within bands"
+        )
 
-        summary = (
+        return (
             f"{indicators.ticker}: Price {indicators.current_price:.2f} | "
             f"MA trend: {ma_trend} | RSI: {indicators.rsi:.1f} ({rsi_level}) | "
             f"BB: {bb_position}"
         )
-
-        return summary

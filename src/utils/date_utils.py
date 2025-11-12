@@ -4,7 +4,7 @@ Handles timezone-aware datetime operations.
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
+
 import pytz
 
 
@@ -24,7 +24,7 @@ def get_timezone(tz_name: str = "Europe/Paris") -> pytz.timezone:
         return pytz.UTC
 
 
-def now(timezone: Optional[str] = None) -> datetime:
+def now(timezone: str | None = None) -> datetime:
     """
     Get current datetime in specified timezone.
 
@@ -39,9 +39,7 @@ def now(timezone: Optional[str] = None) -> datetime:
 
 
 def format_datetime(
-    dt: datetime,
-    fmt: str = "%Y-%m-%d %H:%M:%S %Z",
-    timezone: Optional[str] = None
+    dt: datetime, fmt: str = "%Y-%m-%d %H:%M:%S %Z", timezone: str | None = None
 ) -> str:
     """
     Format datetime to string.
@@ -64,9 +62,7 @@ def format_datetime(
 
 
 def parse_datetime(
-    dt_str: str,
-    fmt: str = "%Y-%m-%d %H:%M:%S",
-    timezone: Optional[str] = None
+    dt_str: str, fmt: str = "%Y-%m-%d %H:%M:%S", timezone: str | None = None
 ) -> datetime:
     """
     Parse datetime string.
@@ -88,10 +84,7 @@ def parse_datetime(
     return dt
 
 
-def get_market_hours(
-    date: Optional[datetime] = None,
-    market: str = "US"
-) -> tuple[datetime, datetime]:
+def get_market_hours(date: datetime | None = None, market: str = "US") -> tuple[datetime, datetime]:
     """
     Get market trading hours for a specific date.
 
@@ -125,7 +118,7 @@ def get_market_hours(
     return open_time, close_time
 
 
-def is_market_open(market: str = "US", dt: Optional[datetime] = None) -> bool:
+def is_market_open(market: str = "US", dt: datetime | None = None) -> bool:
     """
     Check if market is currently open.
 
@@ -152,7 +145,7 @@ def is_market_open(market: str = "US", dt: Optional[datetime] = None) -> bool:
     return open_time <= dt <= close_time
 
 
-def get_lookback_time(hours: int = 24, from_time: Optional[datetime] = None) -> datetime:
+def get_lookback_time(hours: int = 24, from_time: datetime | None = None) -> datetime:
     """
     Get datetime N hours ago.
 

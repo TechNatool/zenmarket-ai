@@ -3,29 +3,30 @@ Chart plotter for AI Trading Advisor.
 Creates technical analysis charts with matplotlib.
 """
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from typing import Optional
 from datetime import datetime
+from pathlib import Path
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from src.utils.logger import get_logger
 
 from .indicators import IndicatorCalculator
-from .signal_generator import TradingSignal, SignalType
-from ..utils.logger import get_logger
+from .signal_generator import SignalType, TradingSignal
 
 logger = get_logger(__name__)
 
 # Use non-interactive backend
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib as mpl
+
+mpl.use("Agg")
 
 
 class TechnicalChartPlotter:
     """Creates technical analysis charts."""
 
-    def __init__(self, output_dir: Path = None):
+    def __init__(self, output_dir: Path | None = None) -> None:
         """
         Initialize chart plotter.
 
@@ -39,15 +40,15 @@ class TechnicalChartPlotter:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Set style
-        plt.style.use('seaborn-v0_8-darkgrid')
+        plt.style.use("seaborn-v0_8-darkgrid")
 
     def plot_full_technical_chart(
         self,
         ticker: str,
         df: pd.DataFrame,
-        signal: Optional[TradingSignal] = None,
-        period_days: int = 90
-    ) -> Optional[Path]:
+        signal: TradingSignal | None = None,
+        period_days: int = 90,
+    ) -> Path | None:
         """
         Create comprehensive technical analysis chart.
 
@@ -71,10 +72,10 @@ class TechnicalChartPlotter:
             # Calculate indicators
             calc = IndicatorCalculator()
 
-            close = df['Close']
-            high = df['High']
-            low = df['Low']
-            volume = df.get('Volume', pd.Series([0] * len(df)))
+            close = df["Close"]
+            df["High"]
+            df["Low"]
+            volume = df.get("Volume", pd.Series([0] * len(df)))
 
             ma_20 = close.rolling(window=20).mean()
             ma_50 = close.rolling(window=50).mean()
@@ -89,24 +90,70 @@ class TechnicalChartPlotter:
             ax1 = fig.add_subplot(gs[0])
 
             # Plot price
-            ax1.plot(df.index, close, label='Price', color='#2E86C1', linewidth=2, zorder=3)
+            ax1.plot(df.index, close, label="Price", color="#2E86C1", linewidth=2, zorder=3)
 
             # Plot moving averages
-            ax1.plot(df.index, ma_20, label='MA20', color='#E74C3C', linewidth=1.5, linestyle='--', alpha=0.8)
-            ax1.plot(df.index, ma_50, label='MA50', color='#27AE60', linewidth=1.5, linestyle='--', alpha=0.8)
+            ax1.plot(
+                df.index,
+                ma_20,
+                label="MA20",
+                color="#E74C3C",
+                linewidth=1.5,
+                linestyle="--",
+                alpha=0.8,
+            )
+            ax1.plot(
+                df.index,
+                ma_50,
+                label="MA50",
+                color="#27AE60",
+                linewidth=1.5,
+                linestyle="--",
+                alpha=0.8,
+            )
 
             # Plot Bollinger Bands
-            ax1.plot(df.index, bb_upper, label='BB Upper', color='gray', linewidth=1, linestyle=':', alpha=0.5)
-            ax1.plot(df.index, bb_middle, label='BB Middle', color='gray', linewidth=1, linestyle=':', alpha=0.5)
-            ax1.plot(df.index, bb_lower, label='BB Lower', color='gray', linewidth=1, linestyle=':', alpha=0.5)
-            ax1.fill_between(df.index, bb_upper, bb_lower, alpha=0.1, color='gray')
+            ax1.plot(
+                df.index,
+                bb_upper,
+                label="BB Upper",
+                color="gray",
+                linewidth=1,
+                linestyle=":",
+                alpha=0.5,
+            )
+            ax1.plot(
+                df.index,
+                bb_middle,
+                label="BB Middle",
+                color="gray",
+                linewidth=1,
+                linestyle=":",
+                alpha=0.5,
+            )
+            ax1.plot(
+                df.index,
+                bb_lower,
+                label="BB Lower",
+                color="gray",
+                linewidth=1,
+                linestyle=":",
+                alpha=0.5,
+            )
+            ax1.fill_between(df.index, bb_upper, bb_lower, alpha=0.1, color="gray")
 
             # Add signal marker if provided
             if signal:
-                signal_color = '#27AE60' if signal.signal == SignalType.BUY else \
-                              '#E74C3C' if signal.signal == SignalType.SELL else '#F39C12'
-                signal_marker = '^' if signal.signal == SignalType.BUY else \
-                               'v' if signal.signal == SignalType.SELL else 'o'
+                signal_color = (
+                    "#27AE60"
+                    if signal.signal == SignalType.BUY
+                    else "#E74C3C" if signal.signal == SignalType.SELL else "#F39C12"
+                )
+                signal_marker = (
+                    "^"
+                    if signal.signal == SignalType.BUY
+                    else "v" if signal.signal == SignalType.SELL else "o"
+                )
 
                 ax1.scatter(
                     df.index[-1],
@@ -115,58 +162,68 @@ class TechnicalChartPlotter:
                     s=200,
                     marker=signal_marker,
                     zorder=5,
-                    edgecolors='black',
+                    edgecolors="black",
                     linewidths=2,
-                    label=f'Signal: {signal.signal.value}'
+                    label=f"Signal: {signal.signal.value}",
                 )
 
-            ax1.set_title(f'{ticker} - Technical Analysis', fontsize=16, fontweight='bold', pad=20)
-            ax1.set_ylabel('Price', fontsize=12)
-            ax1.legend(loc='upper left', framealpha=0.9)
+            ax1.set_title(f"{ticker} - Technical Analysis", fontsize=16, fontweight="bold", pad=20)
+            ax1.set_ylabel("Price", fontsize=12)
+            ax1.legend(loc="upper left", framealpha=0.9)
             ax1.grid(True, alpha=0.3)
 
             # Format x-axis
-            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            ax1.tick_params(axis='x', rotation=45)
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+            ax1.tick_params(axis="x", rotation=45)
 
             # === Subplot 2: RSI ===
             ax2 = fig.add_subplot(gs[1], sharex=ax1)
 
-            ax2.plot(df.index, rsi, label='RSI(14)', color='#9B59B6', linewidth=2)
-            ax2.axhline(y=70, color='red', linestyle='--', linewidth=1, alpha=0.7, label='Overbought (70)')
-            ax2.axhline(y=30, color='green', linestyle='--', linewidth=1, alpha=0.7, label='Oversold (30)')
-            ax2.axhline(y=50, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-            ax2.fill_between(df.index, 30, 70, alpha=0.1, color='gray')
+            ax2.plot(df.index, rsi, label="RSI(14)", color="#9B59B6", linewidth=2)
+            ax2.axhline(
+                y=70, color="red", linestyle="--", linewidth=1, alpha=0.7, label="Overbought (70)"
+            )
+            ax2.axhline(
+                y=30, color="green", linestyle="--", linewidth=1, alpha=0.7, label="Oversold (30)"
+            )
+            ax2.axhline(y=50, color="gray", linestyle=":", linewidth=1, alpha=0.5)
+            ax2.fill_between(df.index, 30, 70, alpha=0.1, color="gray")
 
-            ax2.set_ylabel('RSI', fontsize=12)
+            ax2.set_ylabel("RSI", fontsize=12)
             ax2.set_ylim(0, 100)
-            ax2.legend(loc='upper left', framealpha=0.9)
+            ax2.legend(loc="upper left", framealpha=0.9)
             ax2.grid(True, alpha=0.3)
 
             # === Subplot 3: Volume ===
             ax3 = fig.add_subplot(gs[2], sharex=ax1)
 
             # Color bars based on price change
-            colors = ['#27AE60' if close.iloc[i] >= close.iloc[i-1] else '#E74C3C'
-                     for i in range(1, len(close))]
-            colors.insert(0, '#3498DB')  # First bar neutral
+            colors = [
+                "#27AE60" if close.iloc[i] >= close.iloc[i - 1] else "#E74C3C"
+                for i in range(1, len(close))
+            ]
+            colors.insert(0, "#3498DB")  # First bar neutral
 
             ax3.bar(df.index, volume, color=colors, alpha=0.7, width=0.8)
-            ax3.set_ylabel('Volume', fontsize=12)
-            ax3.set_xlabel('Date', fontsize=12)
-            ax3.grid(True, alpha=0.3, axis='y')
+            ax3.set_ylabel("Volume", fontsize=12)
+            ax3.set_xlabel("Date", fontsize=12)
+            ax3.grid(True, alpha=0.3, axis="y")
 
             # Format numbers
-            ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x/1e6:.1f}M' if x >= 1e6 else f'{x/1e3:.0f}K'))
+            ax3.yaxis.set_major_formatter(
+                plt.FuncFormatter(lambda x, p: f"{x/1e6:.1f}M" if x >= 1e6 else f"{x/1e3:.0f}K")
+            )
 
             # Final formatting
             plt.tight_layout()
 
             # Save chart
-            filename = f"{ticker.replace('^', '').replace('=X', '').replace('-', '')}_technical_chart.png"
+            filename = (
+                f"{ticker.replace('^', '').replace('=X', '').replace('-', '')}_technical_chart.png"
+            )
             filepath = self.output_dir / filename
 
-            plt.savefig(filepath, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.savefig(filepath, dpi=150, bbox_inches="tight", facecolor="white")
             plt.close()
 
             logger.info(f"Technical chart saved: {filepath}")
@@ -178,10 +235,8 @@ class TechnicalChartPlotter:
             return None
 
     def plot_signals_overview(
-        self,
-        signals: list,
-        title: str = "Trading Signals Overview"
-    ) -> Optional[Path]:
+        self, signals: list, title: str = "Trading Signals Overview"
+    ) -> Path | None:
         """
         Create overview chart of all signals.
 
@@ -197,52 +252,47 @@ class TechnicalChartPlotter:
                 logger.warning("No signals to plot")
                 return None
 
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+            _fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
             # === Subplot 1: Signal Distribution ===
             signal_counts = {
-                'BUY': sum(1 for s in signals if s.signal == SignalType.BUY),
-                'SELL': sum(1 for s in signals if s.signal == SignalType.SELL),
-                'HOLD': sum(1 for s in signals if s.signal == SignalType.HOLD)
+                "BUY": sum(1 for s in signals if s.signal == SignalType.BUY),
+                "SELL": sum(1 for s in signals if s.signal == SignalType.SELL),
+                "HOLD": sum(1 for s in signals if s.signal == SignalType.HOLD),
             }
 
-            colors_dist = ['#27AE60', '#E74C3C', '#F39C12']
+            colors_dist = ["#27AE60", "#E74C3C", "#F39C12"]
             ax1.pie(
                 signal_counts.values(),
-                labels=[f'{k}\n({v})' for k, v in signal_counts.items()],
-                autopct='%1.1f%%',
+                labels=[f"{k}\n({v})" for k, v in signal_counts.items()],
+                autopct="%1.1f%%",
                 colors=colors_dist,
                 startangle=90,
-                textprops={'fontsize': 11, 'weight': 'bold'}
+                textprops={"fontsize": 11, "weight": "bold"},
             )
-            ax1.set_title('Signal Distribution', fontsize=14, fontweight='bold', pad=20)
+            ax1.set_title("Signal Distribution", fontsize=14, fontweight="bold", pad=20)
 
             # === Subplot 2: Confidence by Ticker ===
             tickers = [s.ticker for s in signals]
             confidences = [s.confidence for s in signals]
             signal_colors = [
-                '#27AE60' if s.signal == SignalType.BUY else
-                '#E74C3C' if s.signal == SignalType.SELL else
-                '#F39C12'
+                (
+                    "#27AE60"
+                    if s.signal == SignalType.BUY
+                    else "#E74C3C" if s.signal == SignalType.SELL else "#F39C12"
+                )
                 for s in signals
             ]
 
             bars = ax2.barh(tickers, confidences, color=signal_colors, alpha=0.8)
-            ax2.set_xlabel('Confidence', fontsize=12)
-            ax2.set_title('Signal Confidence by Ticker', fontsize=14, fontweight='bold', pad=20)
+            ax2.set_xlabel("Confidence", fontsize=12)
+            ax2.set_title("Signal Confidence by Ticker", fontsize=14, fontweight="bold", pad=20)
             ax2.set_xlim(0, 1)
-            ax2.grid(True, alpha=0.3, axis='x')
+            ax2.grid(True, alpha=0.3, axis="x")
 
             # Add value labels
-            for i, (bar, conf) in enumerate(zip(bars, confidences)):
-                ax2.text(
-                    conf + 0.02,
-                    i,
-                    f'{conf:.2f}',
-                    va='center',
-                    fontsize=9,
-                    weight='bold'
-                )
+            for i, (_bar, conf) in enumerate(zip(bars, confidences, strict=False)):
+                ax2.text(conf + 0.02, i, f"{conf:.2f}", va="center", fontsize=9, weight="bold")
 
             plt.tight_layout()
 
@@ -251,7 +301,7 @@ class TechnicalChartPlotter:
             filename = f"signals_overview_{timestamp}.png"
             filepath = self.output_dir / filename
 
-            plt.savefig(filepath, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.savefig(filepath, dpi=150, bbox_inches="tight", facecolor="white")
             plt.close()
 
             logger.info(f"Signals overview chart saved: {filepath}")
@@ -262,10 +312,7 @@ class TechnicalChartPlotter:
             plt.close()
             return None
 
-    def plot_rsi_heatmap(
-        self,
-        signals: list
-    ) -> Optional[Path]:
+    def plot_rsi_heatmap(self, signals: list) -> Path | None:
         """
         Create RSI heatmap for all tickers.
 
@@ -279,7 +326,7 @@ class TechnicalChartPlotter:
             if not signals:
                 return None
 
-            fig, ax = plt.subplots(figsize=(10, 6))
+            _fig, ax = plt.subplots(figsize=(10, 6))
 
             tickers = [s.ticker for s in signals]
             rsi_values = [s.indicators.rsi for s in signals]
@@ -288,35 +335,32 @@ class TechnicalChartPlotter:
             colors = []
             for rsi in rsi_values:
                 if rsi > 70:
-                    colors.append('#E74C3C')  # Red - Overbought
+                    colors.append("#E74C3C")  # Red - Overbought
                 elif rsi < 30:
-                    colors.append('#27AE60')  # Green - Oversold
+                    colors.append("#27AE60")  # Green - Oversold
                 else:
-                    colors.append('#3498DB')  # Blue - Neutral
+                    colors.append("#3498DB")  # Blue - Neutral
 
             bars = ax.barh(tickers, rsi_values, color=colors, alpha=0.8)
 
             # Add reference lines
-            ax.axvline(x=70, color='red', linestyle='--', linewidth=2, alpha=0.5, label='Overbought')
-            ax.axvline(x=30, color='green', linestyle='--', linewidth=2, alpha=0.5, label='Oversold')
-            ax.axvline(x=50, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+            ax.axvline(
+                x=70, color="red", linestyle="--", linewidth=2, alpha=0.5, label="Overbought"
+            )
+            ax.axvline(
+                x=30, color="green", linestyle="--", linewidth=2, alpha=0.5, label="Oversold"
+            )
+            ax.axvline(x=50, color="gray", linestyle=":", linewidth=1, alpha=0.5)
 
-            ax.set_xlabel('RSI Value', fontsize=12)
-            ax.set_title('RSI Heatmap', fontsize=14, fontweight='bold', pad=20)
+            ax.set_xlabel("RSI Value", fontsize=12)
+            ax.set_title("RSI Heatmap", fontsize=14, fontweight="bold", pad=20)
             ax.set_xlim(0, 100)
-            ax.legend(loc='lower right')
-            ax.grid(True, alpha=0.3, axis='x')
+            ax.legend(loc="lower right")
+            ax.grid(True, alpha=0.3, axis="x")
 
             # Add value labels
-            for i, (bar, rsi) in enumerate(zip(bars, rsi_values)):
-                ax.text(
-                    rsi + 2,
-                    i,
-                    f'{rsi:.1f}',
-                    va='center',
-                    fontsize=10,
-                    weight='bold'
-                )
+            for i, (_bar, rsi) in enumerate(zip(bars, rsi_values, strict=False)):
+                ax.text(rsi + 2, i, f"{rsi:.1f}", va="center", fontsize=10, weight="bold")
 
             plt.tight_layout()
 
@@ -325,7 +369,7 @@ class TechnicalChartPlotter:
             filename = f"rsi_heatmap_{timestamp}.png"
             filepath = self.output_dir / filename
 
-            plt.savefig(filepath, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.savefig(filepath, dpi=150, bbox_inches="tight", facecolor="white")
             plt.close()
 
             logger.info(f"RSI heatmap saved: {filepath}")

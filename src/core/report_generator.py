@@ -3,18 +3,18 @@ Report generator for ZenMarket AI.
 Creates beautiful financial reports in multiple formats (Markdown, HTML, PDF).
 """
 
-import os
-from pathlib import Path
-from typing import List, Dict, Optional
 from datetime import datetime
+from pathlib import Path
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
+
+mpl.use("Agg")  # Non-interactive backend
 import seaborn as sns
 
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
-from ..utils.date_utils import format_friendly_date
+from src.utils.config_loader import get_config
+from src.utils.date_utils import format_friendly_date
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 class ReportGenerator:
     """Generates comprehensive financial reports."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize report generator."""
         self.config = get_config()
         self.report_dir = self.config.report_output_dir
@@ -31,17 +31,17 @@ class ReportGenerator:
         if self.config.report_chart_style == "seaborn":
             sns.set_theme(style="darkgrid")
         else:
-            plt.style.use('default')
+            plt.style.use("default")
 
     def generate_report(
         self,
-        news_articles: List[Dict],
-        market_snapshots: Dict,
-        sentiment_data: Dict,
+        news_articles: list[dict],
+        market_snapshots: dict,
+        sentiment_data: dict,
         ai_insights: str,
-        recommendations: List[str],
-        report_date: Optional[datetime] = None
-    ) -> Dict[str, Path]:
+        recommendations: list[str],
+        report_date: datetime | None = None,
+    ) -> dict[str, Path]:
         """
         Generate complete report in all configured formats.
 
@@ -56,7 +56,7 @@ class ReportGenerator:
         Returns:
             Dictionary of format: file_path
         """
-        from ..utils.date_utils import now
+        from src.utils.date_utils import now
 
         if report_date is None:
             report_date = now(self.config.timezone)
@@ -74,7 +74,7 @@ class ReportGenerator:
             sentiment_data,
             ai_insights,
             recommendations,
-            report_date
+            report_date,
         )
 
         # Generate charts if enabled
@@ -103,12 +103,12 @@ class ReportGenerator:
 
     def _generate_markdown(
         self,
-        news_articles: List[Dict],
-        market_snapshots: Dict,
-        sentiment_data: Dict,
+        news_articles: list[dict],
+        market_snapshots: dict,
+        sentiment_data: dict,
         ai_insights: str,
-        recommendations: List[str],
-        report_date: datetime
+        recommendations: list[str],
+        report_date: datetime,
     ) -> str:
         """Generate Markdown content."""
 
@@ -137,7 +137,7 @@ class ReportGenerator:
         # Top news (limit to 5-7)
         top_news = news_articles[:7]
         for i, article in enumerate(top_news, 1):
-            impact_emoji = self._get_sentiment_emoji(article.get('sentiment', 'neutral'))
+            impact_emoji = self._get_sentiment_emoji(article.get("sentiment", "neutral"))
             md += f"""### {i}. {article.get('title', 'N/A')}
 
 **Source:** {article.get('source', 'Unknown')} | **Sentiment:** {impact_emoji} {article.get('sentiment', 'neutral').title()}
@@ -158,8 +158,12 @@ class ReportGenerator:
 """
 
         for ticker, snapshot in market_snapshots.items():
-            trend_emoji = self._get_trend_emoji(snapshot.get('trend', 'neutral'))
-            change_emoji = "📈" if snapshot.get('change_percent', 0) > 0 else "📉" if snapshot.get('change_percent', 0) < 0 else "➖"
+            trend_emoji = self._get_trend_emoji(snapshot.get("trend", "neutral"))
+            change_emoji = (
+                "📈"
+                if snapshot.get("change_percent", 0) > 0
+                else "📉" if snapshot.get("change_percent", 0) < 0 else "➖"
+            )
 
             md += f"| {snapshot.get('name', ticker)} | {snapshot.get('last_price', 0):.2f} | "
             md += f"{snapshot.get('change', 0):+.2f} | "
@@ -173,7 +177,7 @@ class ReportGenerator:
         md += """## 💬 Sentiment Analysis
 
 """
-        distribution = sentiment_data.get('distribution', {})
+        distribution = sentiment_data.get("distribution", {})
         total = sum(distribution.values())
 
         if total > 0:
@@ -223,26 +227,20 @@ with a qualified financial advisor before making investment decisions.*
         """Save Markdown file."""
         file_path = self.report_dir / f"{base_filename}.md"
 
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         logger.info(f"Markdown report saved: {file_path}")
         return file_path
 
-    def _save_html(
-        self,
-        markdown_content: str,
-        base_filename: str,
-        chart_files: Dict
-    ) -> Path:
+    def _save_html(self, markdown_content: str, base_filename: str, chart_files: dict) -> Path:
         """Convert Markdown to HTML and save."""
         try:
             import markdown2
 
             # Convert markdown to HTML
             html_body = markdown2.markdown(
-                markdown_content,
-                extras=["tables", "fenced-code-blocks"]
+                markdown_content, extras=["tables", "fenced-code-blocks"]
             )
 
             # Wrap in HTML template
@@ -324,25 +322,20 @@ with a qualified financial advisor before making investment decisions.*
 
             file_path = self.report_dir / f"{base_filename}.html"
 
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(html)
 
             logger.info(f"HTML report saved: {file_path}")
             return file_path
 
         except ImportError:
-            logger.error("markdown2 not installed. Skipping HTML generation.")
+            logger.exception("markdown2 not installed. Skipping HTML generation.")
             return None
         except Exception as e:
-            logger.error(f"Error generating HTML: {e}")
+            logger.exception(f"Error generating HTML: {e}")
             return None
 
-    def _save_pdf(
-        self,
-        markdown_content: str,
-        base_filename: str,
-        chart_files: Dict
-    ) -> Path:
+    def _save_pdf(self, markdown_content: str, base_filename: str, chart_files: dict) -> Path:
         """Generate PDF from Markdown."""
         try:
             import markdown2
@@ -350,8 +343,7 @@ with a qualified financial advisor before making investment decisions.*
 
             # Convert markdown to HTML
             html_body = markdown2.markdown(
-                markdown_content,
-                extras=["tables", "fenced-code-blocks"]
+                markdown_content, extras=["tables", "fenced-code-blocks"]
             )
 
             # Create styled HTML
@@ -412,17 +404,13 @@ with a qualified financial advisor before making investment decisions.*
             return file_path
 
         except ImportError as e:
-            logger.error(f"Required library not installed for PDF generation: {e}")
+            logger.exception(f"Required library not installed for PDF generation: {e}")
             return None
         except Exception as e:
-            logger.error(f"Error generating PDF: {e}")
+            logger.exception(f"Error generating PDF: {e}")
             return None
 
-    def _generate_charts(
-        self,
-        market_snapshots: Dict,
-        base_filename: str
-    ) -> Dict[str, Path]:
+    def _generate_charts(self, market_snapshots: dict, base_filename: str) -> dict[str, Path]:
         """Generate market charts."""
         chart_files = {}
 
@@ -430,23 +418,19 @@ with a qualified financial advisor before making investment decisions.*
             # Chart 1: Market performance bar chart
             chart_path = self._create_performance_chart(market_snapshots, base_filename)
             if chart_path:
-                chart_files['performance'] = chart_path
+                chart_files["performance"] = chart_path
 
             # Chart 2: Volatility comparison
             chart_path = self._create_volatility_chart(market_snapshots, base_filename)
             if chart_path:
-                chart_files['volatility'] = chart_path
+                chart_files["volatility"] = chart_path
 
         except Exception as e:
-            logger.error(f"Error generating charts: {e}")
+            logger.exception(f"Error generating charts: {e}")
 
         return chart_files
 
-    def _create_performance_chart(
-        self,
-        market_snapshots: Dict,
-        base_filename: str
-    ) -> Optional[Path]:
+    def _create_performance_chart(self, market_snapshots: dict, base_filename: str) -> Path | None:
         """Create market performance bar chart."""
         try:
             names = []
@@ -454,117 +438,107 @@ with a qualified financial advisor before making investment decisions.*
             colors = []
 
             for ticker, snapshot in market_snapshots.items():
-                names.append(snapshot.get('name', ticker))
-                change_pct = snapshot.get('change_percent', 0)
+                names.append(snapshot.get("name", ticker))
+                change_pct = snapshot.get("change_percent", 0)
                 changes.append(change_pct)
-                colors.append('#4CAF50' if change_pct >= 0 else '#F44336')
+                colors.append("#4CAF50" if change_pct >= 0 else "#F44336")
 
-            fig, ax = plt.subplots(figsize=(10, 6))
+            _fig, ax = plt.subplots(figsize=(10, 6))
             bars = ax.barh(names, changes, color=colors)
 
-            ax.set_xlabel('Change (%)', fontsize=12)
-            ax.set_title('Market Performance', fontsize=14, fontweight='bold')
-            ax.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
-            ax.grid(axis='x', alpha=0.3)
+            ax.set_xlabel("Change (%)", fontsize=12)
+            ax.set_title("Market Performance", fontsize=14, fontweight="bold")
+            ax.axvline(x=0, color="black", linestyle="-", linewidth=0.8)
+            ax.grid(axis="x", alpha=0.3)
 
             # Add value labels
-            for i, (bar, change) in enumerate(zip(bars, changes)):
+            for i, (_bar, change) in enumerate(zip(bars, changes, strict=False)):
                 ax.text(
                     change,
                     i,
-                    f' {change:+.2f}%',
-                    va='center',
-                    ha='left' if change >= 0 else 'right',
-                    fontsize=10
+                    f" {change:+.2f}%",
+                    va="center",
+                    ha="left" if change >= 0 else "right",
+                    fontsize=10,
                 )
 
             plt.tight_layout()
 
             chart_path = self.report_dir / f"{base_filename}_performance.png"
-            plt.savefig(chart_path, dpi=150, bbox_inches='tight')
+            plt.savefig(chart_path, dpi=150, bbox_inches="tight")
             plt.close()
 
             logger.info(f"Performance chart saved: {chart_path}")
             return chart_path
 
         except Exception as e:
-            logger.error(f"Error creating performance chart: {e}")
+            logger.exception(f"Error creating performance chart: {e}")
             plt.close()
             return None
 
-    def _create_volatility_chart(
-        self,
-        market_snapshots: Dict,
-        base_filename: str
-    ) -> Optional[Path]:
+    def _create_volatility_chart(self, market_snapshots: dict, base_filename: str) -> Path | None:
         """Create volatility comparison chart."""
         try:
             names = []
             volatilities = []
 
             for ticker, snapshot in market_snapshots.items():
-                vol = snapshot.get('volatility')
+                vol = snapshot.get("volatility")
                 if vol is not None:
-                    names.append(snapshot.get('name', ticker))
+                    names.append(snapshot.get("name", ticker))
                     volatilities.append(vol)
 
             if not names:
                 return None
 
-            fig, ax = plt.subplots(figsize=(10, 6))
+            _fig, ax = plt.subplots(figsize=(10, 6))
 
             # Color code by volatility level
-            colors = ['#4CAF50' if v < 15 else '#FFC107' if v < 30 else '#F44336' for v in volatilities]
+            colors = [
+                "#4CAF50" if v < 15 else "#FFC107" if v < 30 else "#F44336" for v in volatilities
+            ]
 
             bars = ax.bar(names, volatilities, color=colors)
 
-            ax.set_ylabel('Volatility (%)', fontsize=12)
-            ax.set_title('Market Volatility Comparison', fontsize=14, fontweight='bold')
-            ax.grid(axis='y', alpha=0.3)
+            ax.set_ylabel("Volatility (%)", fontsize=12)
+            ax.set_title("Market Volatility Comparison", fontsize=14, fontweight="bold")
+            ax.grid(axis="y", alpha=0.3)
 
             # Rotate x labels if needed
-            plt.xticks(rotation=45, ha='right')
+            plt.xticks(rotation=45, ha="right")
 
             # Add value labels
-            for bar, vol in zip(bars, volatilities):
+            for bar, vol in zip(bars, volatilities, strict=False):
                 height = bar.get_height()
                 ax.text(
                     bar.get_x() + bar.get_width() / 2,
                     height,
-                    f'{vol:.1f}%',
-                    ha='center',
-                    va='bottom',
-                    fontsize=9
+                    f"{vol:.1f}%",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
                 )
 
             plt.tight_layout()
 
             chart_path = self.report_dir / f"{base_filename}_volatility.png"
-            plt.savefig(chart_path, dpi=150, bbox_inches='tight')
+            plt.savefig(chart_path, dpi=150, bbox_inches="tight")
             plt.close()
 
             logger.info(f"Volatility chart saved: {chart_path}")
             return chart_path
 
         except Exception as e:
-            logger.error(f"Error creating volatility chart: {e}")
+            logger.exception(f"Error creating volatility chart: {e}")
             plt.close()
             return None
 
     def _get_sentiment_emoji(self, sentiment: str) -> str:
         """Get emoji for sentiment."""
-        emojis = {
-            "positive": "🔺",
-            "negative": "🔻",
-            "neutral": "➖"
-        }
+        emojis = {"positive": "🔺", "negative": "🔻", "neutral": "➖"}
         return emojis.get(sentiment.lower(), "➖")
 
     def _get_trend_emoji(self, trend: str) -> str:
         """Get emoji for trend."""
-        emojis = {
-            "bullish": "🔼",
-            "bearish": "🔽",
-            "neutral": "➡️"
-        }
+        emojis = {"bullish": "🔼", "bearish": "🔽", "neutral": "➡️"}
         return emojis.get(trend.lower(), "➡️")

@@ -4,19 +4,21 @@ Order types and data structures for execution system.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from typing import Optional, Dict, Any, List
 from decimal import Decimal
+from enum import Enum
+from typing import Any
 
 
 class OrderSide(Enum):
     """Order side."""
+
     BUY = "BUY"
     SELL = "SELL"
 
 
 class OrderType(Enum):
     """Order type."""
+
     MARKET = "MARKET"
     LIMIT = "LIMIT"
     STOP = "STOP"
@@ -25,6 +27,7 @@ class OrderType(Enum):
 
 class OrderStatus(Enum):
     """Order status."""
+
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     FILLED = "FILLED"
@@ -36,6 +39,7 @@ class OrderStatus(Enum):
 
 class TimeInForce(Enum):
     """Time in force."""
+
     DAY = "DAY"
     GTC = "GTC"  # Good Till Cancelled
     IOC = "IOC"  # Immediate or Cancel
@@ -54,62 +58,62 @@ class Order:
     status: OrderStatus = OrderStatus.PENDING
 
     # Optional parameters
-    limit_price: Optional[Decimal] = None
-    stop_price: Optional[Decimal] = None
-    stop_loss: Optional[Decimal] = None
-    take_profit: Optional[Decimal] = None
+    limit_price: Decimal | None = None
+    stop_price: Decimal | None = None
+    stop_loss: Decimal | None = None
+    take_profit: Decimal | None = None
 
     time_in_force: TimeInForce = TimeInForce.DAY
 
     # Timestamps
     created_at: datetime = field(default_factory=datetime.now)
-    submitted_at: Optional[datetime] = None
-    filled_at: Optional[datetime] = None
-    cancelled_at: Optional[datetime] = None
+    submitted_at: datetime | None = None
+    filled_at: datetime | None = None
+    cancelled_at: datetime | None = None
 
     # Execution details
-    filled_quantity: Decimal = Decimal('0')
-    avg_fill_price: Optional[Decimal] = None
-    commission: Decimal = Decimal('0')
-    fills: List['Fill'] = field(default_factory=list)
+    filled_quantity: Decimal = Decimal("0")
+    avg_fill_price: Decimal | None = None
+    commission: Decimal = Decimal("0")
+    fills: list["Fill"] = field(default_factory=list)
 
     # Rejection details
-    rejection_reason: Optional[str] = None
+    rejection_reason: str | None = None
 
     # Metadata
-    strategy: Optional[str] = None
-    signal_confidence: Optional[float] = None
-    notes: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    strategy: str | None = None
+    signal_confidence: float | None = None
+    notes: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def filled_price(self) -> Optional[Decimal]:
+    def filled_price(self) -> Decimal | None:
         """Alias for avg_fill_price for compatibility."""
         return self.avg_fill_price
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'order_id': self.order_id,
-            'symbol': self.symbol,
-            'side': self.side.value,
-            'order_type': self.order_type.value,
-            'quantity': str(self.quantity),
-            'status': self.status.value,
-            'limit_price': str(self.limit_price) if self.limit_price else None,
-            'stop_price': str(self.stop_price) if self.stop_price else None,
-            'stop_loss': str(self.stop_loss) if self.stop_loss else None,
-            'take_profit': str(self.take_profit) if self.take_profit else None,
-            'time_in_force': self.time_in_force.value,
-            'created_at': self.created_at.isoformat(),
-            'submitted_at': self.submitted_at.isoformat() if self.submitted_at else None,
-            'filled_at': self.filled_at.isoformat() if self.filled_at else None,
-            'filled_quantity': str(self.filled_quantity),
-            'avg_fill_price': str(self.avg_fill_price) if self.avg_fill_price else None,
-            'commission': str(self.commission),
-            'strategy': self.strategy,
-            'signal_confidence': self.signal_confidence,
-            'notes': self.notes
+            "order_id": self.order_id,
+            "symbol": self.symbol,
+            "side": self.side.value,
+            "order_type": self.order_type.value,
+            "quantity": str(self.quantity),
+            "status": self.status.value,
+            "limit_price": str(self.limit_price) if self.limit_price else None,
+            "stop_price": str(self.stop_price) if self.stop_price else None,
+            "stop_loss": str(self.stop_loss) if self.stop_loss else None,
+            "take_profit": str(self.take_profit) if self.take_profit else None,
+            "time_in_force": self.time_in_force.value,
+            "created_at": self.created_at.isoformat(),
+            "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None,
+            "filled_at": self.filled_at.isoformat() if self.filled_at else None,
+            "filled_quantity": str(self.filled_quantity),
+            "avg_fill_price": str(self.avg_fill_price) if self.avg_fill_price else None,
+            "commission": str(self.commission),
+            "strategy": self.strategy,
+            "signal_confidence": self.signal_confidence,
+            "notes": self.notes,
         }
 
 
@@ -123,18 +127,18 @@ class Position:
     current_price: Decimal
 
     # PnL
-    unrealized_pnl: Decimal = Decimal('0')
-    realized_pnl: Decimal = Decimal('0')
+    unrealized_pnl: Decimal = Decimal("0")
+    realized_pnl: Decimal = Decimal("0")
 
     # Risk management
-    stop_loss: Optional[Decimal] = None
-    take_profit: Optional[Decimal] = None
+    stop_loss: Decimal | None = None
+    take_profit: Decimal | None = None
 
     # Metadata
     opened_at: datetime = field(default_factory=datetime.now)
-    strategy: Optional[str] = None
+    strategy: str | None = None
 
-    def update_price(self, current_price: Decimal):
+    def update_price(self, current_price: Decimal) -> None:
         """Update current price and recalculate unrealized PnL."""
         self.current_price = current_price
 
@@ -143,19 +147,19 @@ class Position:
         else:  # Short position
             self.unrealized_pnl = (self.avg_entry_price - current_price) * abs(self.quantity)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'symbol': self.symbol,
-            'quantity': str(self.quantity),
-            'avg_entry_price': str(self.avg_entry_price),
-            'current_price': str(self.current_price),
-            'unrealized_pnl': str(self.unrealized_pnl),
-            'realized_pnl': str(self.realized_pnl),
-            'stop_loss': str(self.stop_loss) if self.stop_loss else None,
-            'take_profit': str(self.take_profit) if self.take_profit else None,
-            'opened_at': self.opened_at.isoformat(),
-            'strategy': self.strategy
+            "symbol": self.symbol,
+            "quantity": str(self.quantity),
+            "avg_entry_price": str(self.avg_entry_price),
+            "current_price": str(self.current_price),
+            "unrealized_pnl": str(self.unrealized_pnl),
+            "realized_pnl": str(self.realized_pnl),
+            "stop_loss": str(self.stop_loss) if self.stop_loss else None,
+            "take_profit": str(self.take_profit) if self.take_profit else None,
+            "opened_at": self.opened_at.isoformat(),
+            "strategy": self.strategy,
         }
 
 
@@ -172,17 +176,17 @@ class Fill:
     commission: Decimal
     timestamp: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'fill_id': self.fill_id,
-            'order_id': self.order_id,
-            'symbol': self.symbol,
-            'side': self.side.value,
-            'quantity': str(self.quantity),
-            'price': str(self.price),
-            'commission': str(self.commission),
-            'timestamp': self.timestamp.isoformat()
+            "fill_id": self.fill_id,
+            "order_id": self.order_id,
+            "symbol": self.symbol,
+            "side": self.side.value,
+            "quantity": str(self.quantity),
+            "price": str(self.price),
+            "commission": str(self.commission),
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
@@ -192,23 +196,23 @@ class Account:
 
     equity: Decimal
     cash: Decimal
-    margin_used: Decimal = Decimal('0')
-    margin_available: Decimal = Decimal('0')
+    margin_used: Decimal = Decimal("0")
+    margin_available: Decimal = Decimal("0")
 
     # Performance metrics
-    total_pnl: Decimal = Decimal('0')
-    daily_pnl: Decimal = Decimal('0')
+    total_pnl: Decimal = Decimal("0")
+    daily_pnl: Decimal = Decimal("0")
 
     # Risk metrics
-    max_drawdown: Decimal = Decimal('0')
-    peak_equity: Decimal = Decimal('0')
+    max_drawdown: Decimal = Decimal("0")
+    peak_equity: Decimal = Decimal("0")
 
     # Timestamp
     updated_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self):
         """Initialize derived fields."""
-        if self.peak_equity == Decimal('0'):
+        if self.peak_equity == Decimal("0"):
             self.peak_equity = self.equity
 
         self.margin_available = self.cash - self.margin_used
@@ -218,32 +222,30 @@ class Account:
         """Alias for cash - amount available to purchase securities."""
         return self.cash
 
-    def update_equity(self, new_equity: Decimal):
+    def update_equity(self, new_equity: Decimal) -> None:
         """Update equity and calculate metrics."""
         self.equity = new_equity
 
         # Update peak
-        if new_equity > self.peak_equity:
-            self.peak_equity = new_equity
+        self.peak_equity = max(self.peak_equity, new_equity)
 
         # Calculate drawdown
-        if self.peak_equity > Decimal('0'):
+        if self.peak_equity > Decimal("0"):
             current_drawdown = (self.peak_equity - new_equity) / self.peak_equity
-            if current_drawdown > self.max_drawdown:
-                self.max_drawdown = current_drawdown
+            self.max_drawdown = max(self.max_drawdown, current_drawdown)
 
         self.updated_at = datetime.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
-            'equity': str(self.equity),
-            'cash': str(self.cash),
-            'margin_used': str(self.margin_used),
-            'margin_available': str(self.margin_available),
-            'total_pnl': str(self.total_pnl),
-            'daily_pnl': str(self.daily_pnl),
-            'max_drawdown': str(self.max_drawdown),
-            'peak_equity': str(self.peak_equity),
-            'updated_at': self.updated_at.isoformat()
+            "equity": str(self.equity),
+            "cash": str(self.cash),
+            "margin_used": str(self.margin_used),
+            "margin_available": str(self.margin_available),
+            "total_pnl": str(self.total_pnl),
+            "daily_pnl": str(self.daily_pnl),
+            "max_drawdown": str(self.max_drawdown),
+            "peak_equity": str(self.peak_equity),
+            "updated_at": self.updated_at.isoformat(),
         }

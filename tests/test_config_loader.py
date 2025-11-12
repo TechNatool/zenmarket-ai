@@ -2,9 +2,6 @@
 Tests for configuration loader module.
 """
 
-import os
-import pytest
-from pathlib import Path
 from src.utils.config_loader import Config, get_config
 
 
@@ -12,18 +9,18 @@ def test_config_initialization():
     """Test that Config can be initialized."""
     config = Config()
     assert config is not None
-    assert hasattr(config, 'newsapi_key')
-    assert hasattr(config, 'market_indices')
+    assert hasattr(config, "newsapi_key")
+    assert hasattr(config, "market_indices")
 
 
 def test_config_default_values():
     """Test that Config has reasonable defaults."""
     config = Config()
-    assert config.log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']
+    assert config.log_level in ["DEBUG", "INFO", "WARNING", "ERROR"]
     assert isinstance(config.market_indices, list)
     assert len(config.market_indices) > 0
     assert config.news_lookback_hours > 0
-    assert config.ai_provider in ['openai', 'anthropic']
+    assert config.ai_provider in ["openai", "anthropic"]
 
 
 def test_config_directories_created():
@@ -39,12 +36,12 @@ def test_config_to_dict():
     config_dict = config.to_dict()
 
     assert isinstance(config_dict, dict)
-    assert 'ai_provider' in config_dict
-    assert 'market_indices' in config_dict
+    assert "ai_provider" in config_dict
+    assert "market_indices" in config_dict
 
     # Sensitive data should not be in dict
-    assert 'openai_api_key' not in config_dict
-    assert 'newsapi_key' not in config_dict
+    assert "openai_api_key" not in config_dict
+    assert "newsapi_key" not in config_dict
 
 
 def test_get_api_key():
@@ -52,11 +49,11 @@ def test_get_api_key():
     config = Config()
 
     # Should return empty string for non-existent keys
-    key = config.get_api_key('nonexistent')
-    assert key == ''
+    key = config.get_api_key("nonexistent")
+    assert key == ""
 
     # Should return configured keys
-    newsapi_key = config.get_api_key('newsapi')
+    newsapi_key = config.get_api_key("newsapi")
     assert isinstance(newsapi_key, str)
 
 

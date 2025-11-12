@@ -3,6 +3,7 @@ Tests for sentiment analyzer module.
 """
 
 import pytest
+
 from src.core.sentiment_analyzer import SentimentAnalyzer, SentimentResult
 
 
@@ -15,8 +16,8 @@ def analyzer():
 def test_analyzer_initialization(analyzer):
     """Test analyzer can be initialized."""
     assert analyzer is not None
-    assert hasattr(analyzer, 'POSITIVE_WORDS')
-    assert hasattr(analyzer, 'NEGATIVE_WORDS')
+    assert hasattr(analyzer, "POSITIVE_WORDS")
+    assert hasattr(analyzer, "NEGATIVE_WORDS")
 
 
 def test_positive_sentiment(analyzer):
@@ -65,7 +66,7 @@ def test_batch_analysis(analyzer):
     texts = [
         "Stock prices surge with excellent gains",
         "Market crashes with heavy losses",
-        "The meeting was held today"
+        "The meeting was held today",
     ]
 
     results = analyzer.analyze_batch(texts, use_ai=False)

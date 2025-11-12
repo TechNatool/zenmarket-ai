@@ -4,24 +4,21 @@ ZenMarket AI - Main Entry Point
 Automated financial intelligence and market analysis system.
 """
 
-import sys
 import argparse
-from pathlib import Path
-from typing import Optional
+import sys
 
-from .utils.logger import setup_logger, get_logger
-from .utils.config_loader import get_config
-from .utils.date_utils import now
-
-from .core.news_fetcher import NewsFetcher
+from .advisor.advisor_report import AdvisorReportGenerator
 from .core.market_data import MarketDataFetcher
+from .core.news_fetcher import NewsFetcher
+from .core.report_generator import ReportGenerator
 from .core.sentiment_analyzer import SentimentAnalyzer
 from .core.summarizer import AISummarizer
-from .core.report_generator import ReportGenerator
-from .advisor.advisor_report import AdvisorReportGenerator
+from .utils.config_loader import get_config
+from .utils.date_utils import now
+from .utils.logger import get_logger, setup_logger
 
 
-def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None) -> dict:
+def run_daily_report(use_ai: bool = True, output_formats: list | None = None) -> dict:
     """
     Run the complete daily report generation pipeline.
 
@@ -44,10 +41,7 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
         logger.info("Step 1/6: Fetching financial news...")
         news_fetcher = NewsFetcher()
         articles = news_fetcher.fetch_all(
-            use_newsapi=True,
-            use_rss=True,
-            filter_relevant=True,
-            deduplicate=True
+            use_newsapi=True, use_rss=True, filter_relevant=True, deduplicate=True
         )
 
         if not articles:
@@ -81,13 +75,15 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
                 article.sentiment = sentiment_results[i].sentiment
 
         # Overall sentiment
-        overall_sentiment, overall_score = sentiment_analyzer.get_overall_sentiment(sentiment_results)
+        overall_sentiment, overall_score = sentiment_analyzer.get_overall_sentiment(
+            sentiment_results
+        )
         sentiment_distribution = sentiment_analyzer.get_sentiment_distribution(sentiment_results)
 
         sentiment_data = {
             "overall_sentiment": overall_sentiment,
             "overall_score": overall_score,
-            "distribution": sentiment_distribution
+            "distribution": sentiment_distribution,
         }
 
         logger.info(f"✓ Overall sentiment: {overall_sentiment.upper()} ({overall_score:.2f})")
@@ -101,9 +97,7 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
             if use_ai:
                 try:
                     article.summary = summarizer.summarize_article(
-                        article.title,
-                        article.description,
-                        max_words=50
+                        article.title, article.description, max_words=50
                     )
                 except Exception as e:
                     logger.warning(f"AI summary failed for article, using description: {e}")
@@ -116,19 +110,18 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
         # === Step 5: Generate AI Insights ===
         logger.info("Step 5/6: Generating AI insights...")
 
-        news_summaries = [article.summary for article in articles[:10] if hasattr(article, 'summary')]
+        news_summaries = [
+            article.summary for article in articles[:10] if hasattr(article, "summary")
+        ]
 
         market_data_dict = {
-            ticker: snapshot.to_dict()
-            for ticker, snapshot in market_snapshots.items()
+            ticker: snapshot.to_dict() for ticker, snapshot in market_snapshots.items()
         }
 
         if use_ai:
             try:
                 ai_insights = summarizer.generate_market_insights(
-                    news_summaries,
-                    market_data_dict,
-                    overall_sentiment
+                    news_summaries, market_data_dict, overall_sentiment
                 )
             except Exception as e:
                 logger.warning(f"AI insights generation failed: {e}")
@@ -144,9 +137,7 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
 
         # === Step 7: Generate Recommendations ===
         recommendations = summarizer.generate_recommendations(
-            market_data_dict,
-            overall_sentiment,
-            news_categories
+            market_data_dict, overall_sentiment, news_categories
         )
 
         logger.info(f"✓ Generated {len(recommendations)} recommendations")
@@ -166,7 +157,7 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
             sentiment_data=sentiment_data,
             ai_insights=ai_insights,
             recommendations=recommendations,
-            report_date=now(config.timezone)
+            report_date=now(config.timezone),
         )
 
         # Restore original formats
@@ -190,19 +181,16 @@ def run_daily_report(use_ai: bool = True, output_formats: Optional[list] = None)
                 "articles_fetched": len(articles),
                 "markets_tracked": len(market_snapshots),
                 "overall_sentiment": overall_sentiment,
-                "sentiment_score": overall_score
-            }
+                "sentiment_score": overall_score,
+            },
         }
 
     except Exception as e:
         logger.error(f"Error generating report: {e}", exc_info=True)
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
-def main():
+def main() -> None:
     """Main entry point with CLI argument parsing."""
 
     parser = argparse.ArgumentParser(
@@ -217,52 +205,44 @@ Examples:
   python -m src.main --trading-advisor  # Generate trading advisor report too
   python -m src.main --trading-only     # Generate only trading advisor report
   python -m src.main --log-level DEBUG  # Enable debug logging
-        """
+        """,
     )
 
     parser.add_argument(
-        "--no-ai",
-        action="store_true",
-        help="Disable AI summarization (uses fallback methods)"
+        "--no-ai", action="store_true", help="Disable AI summarization (uses fallback methods)"
     )
 
     parser.add_argument(
         "--format",
         nargs="+",
         choices=["markdown", "html", "pdf"],
-        help="Output formats (default: all configured formats)"
+        help="Output formats (default: all configured formats)",
     )
 
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Logging level (default: INFO)"
+        help="Logging level (default: INFO)",
     )
 
     parser.add_argument(
         "--trading-advisor",
         action="store_true",
-        help="Also generate trading advisor report with technical analysis"
+        help="Also generate trading advisor report with technical analysis",
     )
 
     parser.add_argument(
         "--trading-only",
         action="store_true",
-        help="Generate only trading advisor report (skip news report)"
+        help="Generate only trading advisor report (skip news report)",
     )
 
     parser.add_argument(
-        "--no-charts",
-        action="store_true",
-        help="Skip chart generation in trading advisor"
+        "--no-charts", action="store_true", help="Skip chart generation in trading advisor"
     )
 
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="ZenMarket AI v1.0.0"
-    )
+    parser.add_argument("--version", action="version", version="ZenMarket AI v1.0.0")
 
     args = parser.parse_args()
 
@@ -289,13 +269,12 @@ Examples:
     # Generate financial brief (unless trading-only)
     if not args.trading_only:
         logger.info("\n📰 Generating Financial Brief...")
-        result = run_daily_report(
-            use_ai=not args.no_ai,
-            output_formats=args.format
-        )
+        result = run_daily_report(use_ai=not args.no_ai, output_formats=args.format)
 
         if not result["success"]:
-            logger.error(f"Financial brief generation failed: {result.get('error', 'Unknown error')}")
+            logger.error(
+                f"Financial brief generation failed: {result.get('error', 'Unknown error')}"
+            )
             success = False
 
     # Generate trading advisor report (if requested or trading-only)
@@ -303,14 +282,14 @@ Examples:
         logger.info("\n📈 Generating Trading Advisor Report...")
         try:
             advisor = AdvisorReportGenerator()
-            advisor_result = advisor.generate_full_report(
-                generate_charts=not args.no_charts
-            )
+            advisor_result = advisor.generate_full_report(generate_charts=not args.no_charts)
 
             if advisor_result["success"]:
                 logger.info("Trading advisor report generated successfully!")
             else:
-                logger.error(f"Trading advisor report failed: {advisor_result.get('error', 'Unknown')}")
+                logger.error(
+                    f"Trading advisor report failed: {advisor_result.get('error', 'Unknown')}"
+                )
                 success = False
 
         except Exception as e:

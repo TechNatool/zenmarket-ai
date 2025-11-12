@@ -2,18 +2,18 @@
 Tests for date utilities module.
 """
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
+
 import pytz
 
 from src.utils.date_utils import (
-    get_timezone,
-    now,
     format_datetime,
-    parse_datetime,
+    format_friendly_date,
     get_lookback_time,
+    get_timezone,
     is_market_open,
-    format_friendly_date
+    now,
+    parse_datetime,
 )
 
 

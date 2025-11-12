@@ -3,16 +3,16 @@ Market data fetcher for ZenMarket AI.
 Retrieves stock, index, forex, and crypto data from various sources.
 """
 
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime
 
-from ..utils.logger import get_logger
-from ..utils.config_loader import get_config
-from ..utils.date_utils import now, get_lookback_time
+import numpy as np
+import pandas as pd
+import yfinance as yf
+
+from src.utils.config_loader import get_config
+from src.utils.date_utils import now
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,19 +26,19 @@ class MarketSnapshot:
     last_price: float
     change: float
     change_percent: float
-    volume: Optional[int] = None
-    high: Optional[float] = None
-    low: Optional[float] = None
-    open_price: Optional[float] = None
-    timestamp: Optional[datetime] = None
-    volatility: Optional[float] = None
-    trend: Optional[str] = None
+    volume: int | None = None
+    high: float | None = None
+    low: float | None = None
+    open_price: float | None = None
+    timestamp: datetime | None = None
+    volatility: float | None = None
+    trend: str | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         data = asdict(self)
         if self.timestamp:
-            data['timestamp'] = self.timestamp.isoformat()
+            data["timestamp"] = self.timestamp.isoformat()
         return data
 
 
@@ -49,13 +49,13 @@ class MarketAnalysis:
     ticker: str
     trend: str  # "bullish", "bearish", "neutral"
     volatility: str  # "low", "medium", "high"
-    support_level: Optional[float] = None
-    resistance_level: Optional[float] = None
-    rsi: Optional[float] = None
-    moving_avg_20: Optional[float] = None
-    moving_avg_50: Optional[float] = None
+    support_level: float | None = None
+    resistance_level: float | None = None
+    rsi: float | None = None
+    moving_avg_20: float | None = None
+    moving_avg_50: float | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -76,7 +76,7 @@ class MarketDataFetcher:
         "CL=F": "Crude Oil",
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize market data fetcher."""
         self.config = get_config()
 
@@ -92,7 +92,7 @@ class MarketDataFetcher:
         """
         return self.TICKER_NAMES.get(ticker, ticker)
 
-    def fetch_snapshot(self, ticker: str) -> Optional[MarketSnapshot]:
+    def fetch_snapshot(self, ticker: str) -> MarketSnapshot | None:
         """
         Fetch current market snapshot for a ticker.
 
@@ -106,7 +106,6 @@ class MarketDataFetcher:
             logger.info(f"Fetching snapshot for {ticker}")
 
             stock = yf.Ticker(ticker)
-            info = stock.info
             hist = stock.history(period="5d")
 
             if hist.empty:
@@ -116,13 +115,13 @@ class MarketDataFetcher:
             latest = hist.iloc[-1]
             previous = hist.iloc[-2] if len(hist) > 1 else latest
 
-            last_price = float(latest['Close'])
-            prev_close = float(previous['Close'])
+            last_price = float(latest["Close"])
+            prev_close = float(previous["Close"])
             change = last_price - prev_close
             change_percent = (change / prev_close) * 100 if prev_close != 0 else 0
 
             # Calculate volatility (standard deviation of returns)
-            returns = hist['Close'].pct_change().dropna()
+            returns = hist["Close"].pct_change().dropna()
             volatility = float(returns.std() * np.sqrt(252) * 100) if len(returns) > 0 else None
 
             # Determine trend
@@ -134,28 +133,33 @@ class MarketDataFetcher:
                 last_price=last_price,
                 change=change,
                 change_percent=change_percent,
-                volume=int(latest['Volume']) if 'Volume' in latest and not pd.isna(latest['Volume']) else None,
-                high=float(latest['High']),
-                low=float(latest['Low']),
-                open_price=float(latest['Open']),
-                timestamp=latest.name.to_pydatetime() if hasattr(latest.name, 'to_pydatetime') else now(),
+                volume=(
+                    int(latest["Volume"])
+                    if "Volume" in latest and not pd.isna(latest["Volume"])
+                    else None
+                ),
+                high=float(latest["High"]),
+                low=float(latest["Low"]),
+                open_price=float(latest["Open"]),
+                timestamp=(
+                    latest.name.to_pydatetime() if hasattr(latest.name, "to_pydatetime") else now()
+                ),
                 volatility=volatility,
                 trend=trend,
             )
 
-            logger.info(f"Successfully fetched snapshot for {ticker}: {last_price:.2f} ({change_percent:+.2f}%)")
+            logger.info(
+                f"Successfully fetched snapshot for {ticker}: {last_price:.2f} ({change_percent:+.2f}%)"
+            )
             return snapshot
 
         except Exception as e:
-            logger.error(f"Error fetching snapshot for {ticker}: {e}")
+            logger.exception(f"Error fetching snapshot for {ticker}: {e}")
             return None
 
     def fetch_historical(
-        self,
-        ticker: str,
-        period: str = "1mo",
-        interval: str = "1d"
-    ) -> Optional[pd.DataFrame]:
+        self, ticker: str, period: str = "1mo", interval: str = "1d"
+    ) -> pd.DataFrame | None:
         """
         Fetch historical data for a ticker.
 
@@ -168,7 +172,9 @@ class MarketDataFetcher:
             DataFrame with historical data or None
         """
         try:
-            logger.info(f"Fetching historical data for {ticker} (period={period}, interval={interval})")
+            logger.info(
+                f"Fetching historical data for {ticker} (period={period}, interval={interval})"
+            )
 
             stock = yf.Ticker(ticker)
             hist = stock.history(period=period, interval=interval)
@@ -181,10 +187,12 @@ class MarketDataFetcher:
             return hist
 
         except Exception as e:
-            logger.error(f"Error fetching historical data for {ticker}: {e}")
+            logger.exception(f"Error fetching historical data for {ticker}: {e}")
             return None
 
-    def analyze_market(self, ticker: str, hist: Optional[pd.DataFrame] = None) -> Optional[MarketAnalysis]:
+    def analyze_market(
+        self, ticker: str, hist: pd.DataFrame | None = None
+    ) -> MarketAnalysis | None:
         """
         Perform technical analysis on market data.
 
@@ -203,7 +211,7 @@ class MarketDataFetcher:
                 return None
 
             # Calculate technical indicators
-            close = hist['Close']
+            close = hist["Close"]
 
             # Moving averages
             ma_20 = close.rolling(window=20).mean().iloc[-1] if len(close) >= 20 else None
@@ -213,8 +221,8 @@ class MarketDataFetcher:
             rsi = self._calculate_rsi(close)
 
             # Support and resistance (simple approximation)
-            support = float(hist['Low'].tail(20).min())
-            resistance = float(hist['High'].tail(20).max())
+            support = float(hist["Low"].tail(20).min())
+            resistance = float(hist["High"].tail(20).max())
 
             # Trend determination
             trend = self._determine_trend(hist)
@@ -245,10 +253,10 @@ class MarketDataFetcher:
             return analysis
 
         except Exception as e:
-            logger.error(f"Error analyzing market for {ticker}: {e}")
+            logger.exception(f"Error analyzing market for {ticker}: {e}")
             return None
 
-    def fetch_all_markets(self) -> Dict[str, MarketSnapshot]:
+    def fetch_all_markets(self) -> dict[str, MarketSnapshot]:
         """
         Fetch snapshots for all configured markets.
 
@@ -264,7 +272,9 @@ class MarketDataFetcher:
             if snapshot:
                 snapshots[ticker] = snapshot
 
-        logger.info(f"Successfully fetched {len(snapshots)}/{len(self.config.market_indices)} market snapshots")
+        logger.info(
+            f"Successfully fetched {len(snapshots)}/{len(self.config.market_indices)} market snapshots"
+        )
         return snapshots
 
     def _determine_trend(self, hist: pd.DataFrame) -> str:
@@ -280,7 +290,7 @@ class MarketDataFetcher:
         if len(hist) < 5:
             return "neutral"
 
-        close = hist['Close']
+        close = hist["Close"]
         recent = close.tail(5)
 
         # Simple trend: compare first and last of recent period
@@ -291,12 +301,11 @@ class MarketDataFetcher:
 
         if change_pct > 1.0:
             return "bullish"
-        elif change_pct < -1.0:
+        if change_pct < -1.0:
             return "bearish"
-        else:
-            return "neutral"
+        return "neutral"
 
-    def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> Optional[float]:
+    def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> float | None:
         """
         Calculate RSI (Relative Strength Index).
 
@@ -336,12 +345,18 @@ class MarketDataFetcher:
 
         summary_lines = ["Market Overview:"]
 
-        for ticker, snapshot in snapshots.items():
-            emoji = "📈" if snapshot.change_percent > 0 else "📉" if snapshot.change_percent < 0 else "➖"
+        for _ticker, snapshot in snapshots.items():
+            emoji = (
+                "📈"
+                if snapshot.change_percent > 0
+                else "📉" if snapshot.change_percent < 0 else "➖"
+            )
             trend_emoji = {"bullish": "🔼", "bearish": "🔽", "neutral": "➡️"}.get(snapshot.trend, "")
 
-            line = (f"{emoji} {snapshot.name}: {snapshot.last_price:.2f} "
-                    f"({snapshot.change_percent:+.2f}%) {trend_emoji}")
+            line = (
+                f"{emoji} {snapshot.name}: {snapshot.last_price:.2f} "
+                f"({snapshot.change_percent:+.2f}%) {trend_emoji}"
+            )
 
             summary_lines.append(line)
 
