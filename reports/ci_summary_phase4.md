@@ -196,13 +196,69 @@ ef932c7 - docs(ci): add Phase 4 CI/CD summary report
 - Build metrics and performance data
 - Production readiness checklist
 
-### Commit 4: Regression Tests (Final)
+### Commit 4: Regression Tests
 ```
 ac33799 - fix(backtest): enum import & Position init; add regression tests
 ```
 - Added 9 comprehensive regression tests
 - Fixed linting issues (17 auto-fixes)
 - **Final Status: 146/146 tests passing**
+
+### Commit 5: Update CI Summary
+```
+145e878 - docs(ci): update CI summary with regression test results
+```
+- Updated CI report with final test counts
+- Documented all fixes and improvements
+- Added production readiness checklist
+
+### Commit 6: CI Linux Stabilization (Final)
+```
+31a4188 - fix(ci): stabilize Linux workflows by excluding Windows-only deps (MT5, IBKR)
+```
+- ✅ **CI stabilized — Linux workflows now exclude MT5/IBKR modules**
+- Added conditional MetaTrader5 installation (Windows-only)
+- Made ib-insync installation failure-tolerant
+- Installed scipy, reportlab, tabulate unconditionally
+- Upgraded pip, setuptools, wheel before dependency installation
+- Applied to both type-check and test jobs
+
+---
+
+## 🐧 CI Platform Compatibility
+
+### Linux Workflow Stabilization
+**Problem:** MetaTrader5 and ib-insync caused failures on Linux runners (ubuntu-latest)
+
+**Solution:** Platform-aware dependency installation
+```yaml
+- name: Install dependencies
+  run: |
+    python -m pip install --upgrade pip setuptools wheel
+    pip install -e ".[dev]"
+    # Optional dependencies for type checking
+    pip install scipy reportlab tabulate
+    pip install ib-insync || echo "ib-insync not available on this platform"
+    # Skip MetaTrader5 on Linux
+    if [ "$RUNNER_OS" != "Linux" ]; then
+      pip install MetaTrader5 || echo "MetaTrader5 not available"
+    fi
+```
+
+### Platform-Specific Dependencies
+| Dependency | Linux | macOS | Windows | Status |
+|------------|-------|-------|---------|--------|
+| scipy | ✅ | ✅ | ✅ | Required |
+| reportlab | ✅ | ✅ | ✅ | Required |
+| tabulate | ✅ | ✅ | ✅ | Required |
+| ib-insync | ⚠️ | ✅ | ⚠️ | Optional (failure-tolerant) |
+| MetaTrader5 | ❌ | ❌ | ✅ | Windows-only (conditional) |
+
+**Impact:**
+- ✅ All Python versions (3.11, 3.12) now pass on Linux
+- ✅ Type checking job passes
+- ✅ Test jobs pass with 146/146 tests
+- ✅ No dependency installation failures block CI
 
 ---
 
@@ -220,8 +276,8 @@ ac33799 - fix(backtest): enum import & Position init; add regression tests
 |------|--------|---------|
 | **Lint & Format** | ✅ PASS | 0 errors, clean code |
 | **Type Check** | ✅ PASS | Progressive typing OK |
-| **Unit Tests (3.11)** | ✅ PASS | 137/137 tests |
-| **Unit Tests (3.12)** | ✅ PASS | 137/137 tests |
+| **Unit Tests (3.11)** | ✅ PASS | 146/146 tests |
+| **Unit Tests (3.12)** | ✅ PASS | 146/146 tests |
 | **Security Scan** | ✅ PASS | 0 critical issues |
 | **Documentation** | ✅ PASS | Complete docs |
 | **Quality Gate** | ✅ PASS | All checks green |
@@ -257,7 +313,8 @@ ac33799 - fix(backtest): enum import & Position init; add regression tests
 
 5. **Testing Infrastructure**
    - 6 new backtest-specific tests
-   - 100% test pass rate (137/137)
+   - 9 regression tests for Phase 4 bugs
+   - 100% test pass rate (146/146)
    - Good coverage on new modules
 
 ---
@@ -288,8 +345,11 @@ Phase 4 implementation is **COMPLETE** and **PRODUCTION-READY**.
 
 All critical issues have been resolved:
 - ✅ Import errors fixed
-- ✅ Type compatibility issues resolved  
-- ✅ Full test suite passing (137/137)
+- ✅ Type compatibility issues resolved
+- ✅ Full test suite passing (146/146)
+- ✅ Regression tests added (9 tests)
+- ✅ CI/CD stabilized for Linux workflows
+- ✅ Platform-specific dependencies handled correctly
 - ✅ Code quality maintained
 - ✅ No regressions introduced
 - ✅ Documentation comprehensive
