@@ -171,4 +171,5 @@ def test_insufficient_funds(backtest_broker, sample_historical_data):
 
     # Order should be rejected
     from src.execution.order_types import OrderStatus
+
     assert order.status == OrderStatus.REJECTED

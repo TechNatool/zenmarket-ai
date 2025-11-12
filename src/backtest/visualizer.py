@@ -389,4 +389,3 @@ class BacktestVisualizer:
         ]
 
         # Risk Metrics
-

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12"]
 
     steps:
     - name: Checkout code
@@ -27,15 +27,23 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov flake8 black mypy
+        python -m pip install --upgrade pip setuptools wheel
+        # Install project with dev dependencies
+        pip install -e ".[dev]"
+        # Install Phase 4 optional dependencies (cross-platform)
+        pip install scipy reportlab tabulate
+        # Install broker integration packages with platform awareness
+        pip install ib-insync || echo "ib-insync not available on this platform"
+        # Skip MetaTrader5 on Linux (Windows-only)
+        if [ "$RUNNER_OS" != "Linux" ]; then
+          pip install MetaTrader5 || echo "MetaTrader5 not available"
+        fi
 
     - name: Lint with flake8
       run: |
@@ -139,14 +147,22 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -e ".[dev]"
+        # Install Phase 4 optional dependencies
+        pip install scipy reportlab tabulate
+        pip install ib-insync || echo "ib-insync not available"
+        # Skip MetaTrader5 on Linux
+        if [ "$RUNNER_OS" != "Linux" ]; then
+          pip install MetaTrader5 || echo "MetaTrader5 not available"
+        fi
 
     - name: Verify imports
       run: |
         python -c "from src.core import news_fetcher, market_data, sentiment_analyzer"
         python -c "from src.advisor import signal_generator, indicators"
-        python -c "from src.execution import execution_engine, broker_simulator"
+        python -c "from src.execution import execution_engine, broker_simulator, position_sizing, risk_manager"
+        python -c "from src.backtest import backtest_broker, backtest_engine, metrics"
         python -c "from src.utils import logger, config_loader"
 
     - name: Check data directories
