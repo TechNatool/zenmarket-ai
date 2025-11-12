@@ -1,0 +1,93 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases",
+    "group:allNonMajor",
+    "schedule:weekly"
+  ],
+  "timezone": "UTC",
+  "schedule": ["before 6am on Monday"],
+  "labels": ["dependencies", "automated"],
+  "assignees": ["@TechNatool"],
+  "rangeStrategy": "bump",
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "packageRules": [
+    {
+      "description": "Group Python dependencies",
+      "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry"],
+      "groupName": "Python dependencies",
+      "automerge": false
+    },
+    {
+      "description": "Auto-merge dev dependencies patches",
+      "matchDepTypes": ["dev"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "prPriority": 10,
+      "labels": ["security", "dependencies"]
+    },
+    {
+      "description": "Group testing dependencies",
+      "matchPackagePatterns": ["pytest", "hypothesis", "mock"],
+      "groupName": "Testing dependencies"
+    },
+    {
+      "description": "Group linting dependencies",
+      "matchPackagePatterns": ["ruff", "black", "isort", "mypy", "bandit"],
+      "groupName": "Linting dependencies"
+    },
+    {
+      "description": "Group documentation dependencies",
+      "matchPackagePatterns": ["mkdocs", "markdown", "pymdown"],
+      "groupName": "Documentation dependencies"
+    },
+    {
+      "description": "Pin GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "automerge": false
+    },
+    {
+      "description": "Major version updates - manual review required",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major-update", "dependencies"],
+      "prPriority": 5
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "vulnerability"],
+    "assignees": ["@TechNatool"],
+    "schedule": ["at any time"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on Monday"]
+  },
+  "python": {
+    "enabled": true
+  },
+  "pip_requirements": {
+    "fileMatch": ["(^|/)requirements.*\\.txt$", "(^|/)requirements.*\\.in$"]
+  },
+  "ignoreDeps": [],
+  "ignorePresets": []
+}

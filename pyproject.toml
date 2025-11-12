@@ -37,15 +37,50 @@ dependencies = [
     "markdown2>=2.4.12",
     "weasyprint>=61.0",
     "python-dateutil>=2.8.2",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+    # Testing
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-timeout>=2.2.0",
+    "pytest-mock>=3.12.0",
+    "hypothesis>=6.96.0",
+
+    # Code quality
+    "ruff>=0.1.14",
     "black>=24.1.0",
-    "flake8>=7.0.0",
+    "isort>=5.13.0",
     "mypy>=1.8.0",
+
+    # Security
+    "bandit>=1.7.6",
+    "pip-audit>=2.6.1",
+
+    # Documentation quality
+    "interrogate>=1.5.0",
+
+    # Documentation generation
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.5.3",
+    "mkdocstrings[python]>=0.24.0",
+    "pymdown-extensions>=10.7.0",
+
+    # Dependency management
+    "pip-tools>=7.3.0",
+
+    # Pre-commit
+    "pre-commit>=3.6.0",
+
+    # Type stubs
+    "pandas-stubs>=2.1.4.231227",
+    "types-pytz>=2024.1.0.20240203",
+    "types-requests>=2.31.0.20240106",
+    "types-python-dateutil>=2.8.19.20240106",
 ]
 
 [project.scripts]
@@ -55,10 +90,13 @@ zenmarket = "src.main:main"
 Homepage = "https://github.com/TechNatool/zenmarket-ai"
 Repository = "https://github.com/TechNatool/zenmarket-ai"
 Issues = "https://github.com/TechNatool/zenmarket-ai/issues"
+Documentation = "https://github.com/TechNatool/zenmarket-ai#documentation"
+
+# ==================== Code Formatting ====================
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -69,26 +107,236 @@ extend-exclude = '''
   | \.mypy_cache
   | \.tox
   | \.venv
+  | _build
+  | buck-out
   | build
   | dist
+  | docs/site
 )/
 '''
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-v --cov=src --cov-report=html --cov-report=term-missing"
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = ["**/venv/*", "**/build/*", "**/dist/*"]
+
+# ==================== Linting ====================
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "__pycache__",
+    "_build",
+    "build",
+    "dist",
+    "docs/site",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "C",      # flake8-comprehensions
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "N",      # pep8-naming
+    "ANN",    # flake8-annotations (type hints)
+    "S",      # flake8-bandit (security)
+    "A",      # flake8-builtins
+    "COM",    # flake8-commas
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "EM",     # flake8-errmsg
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "G",      # flake8-logging-format
+    "PIE",    # flake8-pie
+    "T20",    # flake8-print
+    "PT",     # flake8-pytest-style
+    "Q",      # flake8-quotes
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SLF",    # flake8-self
+    "SIM",    # flake8-simplify
+    "TID",    # flake8-tidy-imports
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+    "ERA",    # eradicate
+    "PL",     # Pylint
+    "TRY",    # tryceratops
+    "RUF",    # Ruff-specific rules
+]
+
+ignore = [
+    "ANN101",  # Missing type annotation for self in method
+    "ANN102",  # Missing type annotation for cls in classmethod
+    "ANN401",  # Dynamically typed expressions (Any) disallowed
+    "S101",    # Use of assert detected (needed for tests)
+    "PLR0913", # Too many arguments to function call
+    "PLR2004", # Magic value used in comparison
+    "TRY003",  # Avoid specifying long messages outside the exception class
+    "EM101",   # Exception must not use a string literal
+    "EM102",   # Exception must not use an f-string literal
+    "G004",    # Logging statement uses f-string
+    "COM812",  # Trailing comma missing (conflicts with formatter)
+    "ISC001",  # Implicitly concatenated string literals (conflicts with formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # Use of assert allowed in tests
+    "ARG001",  # Unused function argument (fixtures)
+    "PLR2004", # Magic values OK in tests
+    "ANN",     # Type annotations not required in tests
+]
+"src/cli/**/*.py" = [
+    "T20",     # Print allowed in CLI
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# ==================== Type Checking ====================
 
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+strict_concatenate = true
+check_untyped_defs = true
+disallow_untyped_calls = false  # Progressive typing
+disallow_incomplete_defs = true
+disallow_untyped_decorators = false
 ignore_missing_imports = true
+show_error_codes = true
+show_column_numbers = true
+pretty = true
 
-[tool.flake8]
-max-line-length = 100
-extend-ignore = ["E203", "W503"]
-exclude = [".git", "__pycache__", "build", "dist", ".venv", "venv"]
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+# ==================== Testing ====================
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = """
+    -v
+    --strict-markers
+    --tb=short
+    --cov=src
+    --cov-report=term-missing
+    --cov-report=html
+    --cov-report=xml
+    --cov-branch
+    --cov-fail-under=90
+    --maxfail=5
+"""
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "network: marks tests that require network access",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "*/venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# ==================== Documentation Quality ====================
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = false
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = false
+ignore-nested-classes = true
+ignore-setters = false
+fail-under = 85
+exclude = ["setup.py", "docs", "build", "tests"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+verbose = 2
+quiet = false
+whitelist-regex = []
+color = true
+omit-covered-files = false
+
+# ==================== Security ====================
+
+[tool.bandit]
+exclude_dirs = ["tests", "docs", ".venv", "venv", "build"]
+skips = ["B101"]  # assert_used - needed in tests
+
+# ==================== Hypothesis ====================
+
+[tool.hypothesis]
+max_examples = 100
+derandomize = true
+deadline = 500
