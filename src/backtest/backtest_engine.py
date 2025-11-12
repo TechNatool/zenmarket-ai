@@ -21,7 +21,7 @@ from src.backtest.backtest_broker import BacktestBroker
 from src.backtest.metrics import PerformanceMetrics
 from src.backtest.visualizer import BacktestVisualizer
 from src.execution.execution_engine import ExecutionEngine
-from src.execution.position_sizing import PositionSizingMethod
+from src.execution.position_sizing import SizingMethod
 from src.execution.risk_manager import RiskLimits
 from src.utils.logger import get_logger
 
@@ -40,7 +40,7 @@ class BacktestConfig:
     commission_per_trade: Decimal = Decimal("2.0")
     risk_per_trade_pct: float = 0.01
     max_positions: int = 5
-    sizing_method: PositionSizingMethod = PositionSizingMethod.FIXED_FRACTIONAL
+    sizing_method: SizingMethod = SizingMethod.FIXED_FRACTIONAL
     strategy_name: str = "TechnicalStrategy"
 
 

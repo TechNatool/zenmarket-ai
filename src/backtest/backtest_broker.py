@@ -103,12 +103,12 @@ class BacktestBroker(BrokerBase):
             if position.quantity != Decimal("0"):
                 current_price = self._get_current_bar_price(symbol, "Close")
                 position.current_price = current_price
-                position.market_value = position.quantity * current_price
+                market_value = position.quantity * current_price
                 position.unrealized_pnl = (
                     current_price - position.avg_entry_price
                 ) * position.quantity
 
-                total_position_value += position.market_value
+                total_position_value += market_value
 
         # Update equity
         self._account.equity = self._account.cash + total_position_value
@@ -300,7 +300,6 @@ class BacktestBroker(BrokerBase):
                 symbol=fill.symbol,
                 quantity=Decimal("0"),
                 avg_entry_price=Decimal("0"),
-                market_value=Decimal("0"),
                 unrealized_pnl=Decimal("0"),
                 current_price=fill.price,
             )
@@ -333,13 +332,12 @@ class BacktestBroker(BrokerBase):
             if position.quantity == Decimal("0"):
                 position.avg_entry_price = Decimal("0")
 
-        # Update current price
+        # Update current price and PnL
         position.current_price = fill.price
-        position.market_value = position.quantity * fill.price
         position.unrealized_pnl = (fill.price - position.avg_entry_price) * position.quantity
 
         # Update account equity
-        total_position_value = sum(p.market_value for p in self._positions.values())
+        total_position_value = sum(p.quantity * p.current_price for p in self._positions.values())
         self._account.equity = self._account.cash + total_position_value
 
     def cancel_order(self, order_id: str) -> bool:
