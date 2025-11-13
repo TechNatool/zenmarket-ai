@@ -73,10 +73,12 @@ def sample_historical_data() -> dict[str, pd.DataFrame]:
 @pytest.fixture
 def mock_yfinance_ticker():
     """Create a mock yfinance Ticker object."""
+
     def create_ticker(symbol: str, data: pd.DataFrame) -> Mock:
         ticker = Mock()
         ticker.history = Mock(return_value=data)
         return ticker
+
     return create_ticker
 
 
@@ -137,12 +139,14 @@ class TestBacktestResult:
         metrics.total_return_pct = 25.5
         metrics.total_trades = 100
 
-        equity_df = pd.DataFrame({
-            "timestamp": pd.date_range("2024-01-01", periods=10),
-            "equity": [100000 + i * 1000 for i in range(10)],
-            "cash": [50000 + i * 500 for i in range(10)],
-            "drawdown": [0.0] * 10,
-        })
+        equity_df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2024-01-01", periods=10),
+                "equity": [100000 + i * 1000 for i in range(10)],
+                "cash": [50000 + i * 500 for i in range(10)],
+                "drawdown": [0.0] * 10,
+            }
+        )
 
         trades = [
             {"symbol": "AAPL", "side": "BUY", "quantity": 10, "price": 150.0},
@@ -261,6 +265,7 @@ class TestBacktestEngine:
     @patch("src.backtest.backtest_engine.yf.Ticker")
     def test_load_historical_data(self, mock_ticker_class, sample_config, sample_historical_data):
         """Test loading historical data from yfinance."""
+
         # Setup mock
         def mock_ticker(symbol):
             ticker = Mock()
@@ -283,6 +288,7 @@ class TestBacktestEngine:
     @patch("src.backtest.backtest_engine.yf.Ticker")
     def test_load_historical_data_missing_symbol(self, mock_ticker_class, sample_config):
         """Test handling of missing symbol data."""
+
         # Setup mock to return empty DataFrame for one symbol
         def mock_ticker(symbol):
             ticker = Mock()
@@ -290,9 +296,7 @@ class TestBacktestEngine:
                 ticker.history = Mock(return_value=pd.DataFrame())  # Empty data
             else:
                 dates = pd.date_range("2024-01-01", periods=20, freq="D")
-                ticker.history = Mock(
-                    return_value=pd.DataFrame({"Close": range(20)}, index=dates)
-                )
+                ticker.history = Mock(return_value=pd.DataFrame({"Close": range(20)}, index=dates))
             return ticker
 
         mock_ticker_class.side_effect = mock_ticker
@@ -331,6 +335,7 @@ class TestBacktestEngine:
         sample_historical_data,
     ):
         """Test basic backtest execution."""
+
         # Setup mocks
         def mock_ticker(symbol):
             ticker = Mock()
@@ -385,6 +390,7 @@ class TestBacktestEngine:
         sample_historical_data,
     ):
         """Test backtest with actual BUY/SELL signals."""
+
         # Setup mocks
         def mock_ticker(symbol):
             ticker = Mock()
@@ -468,7 +474,9 @@ class TestParallelBacktesting:
             mock_future.result = Mock(return_value=mock_result)
             mock_futures[mock_future] = config
 
-        mock_executor.submit = Mock(side_effect=lambda fn, cfg: list(mock_futures.keys())[configs.index(cfg)])
+        mock_executor.submit = Mock(
+            side_effect=lambda fn, cfg: list(mock_futures.keys())[configs.index(cfg)]
+        )
 
         with patch("src.backtest.backtest_engine.as_completed", return_value=mock_futures.keys()):
             results = BacktestEngine.run_parallel(configs, max_workers=2)
