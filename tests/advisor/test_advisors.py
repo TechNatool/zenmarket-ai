@@ -15,19 +15,16 @@ def test_signal_generator_basic_signal():
     # Create bullish indicators
     bullish_indicators = TechnicalIndicators(
         ticker="AAPL",
-        timestamp="2024-01-01",
-        close=150.0,
+        current_price=150.0,
         ma_20=145.0,
         ma_50=140.0,
         rsi=45.0,  # Neutral RSI
-        macd=1.5,
-        macd_signal=1.0,
         bb_upper=155.0,
         bb_middle=150.0,
         bb_lower=145.0,
+        volume_avg=950000.0,
+        current_volume=1000000,
         atr=2.5,
-        volume=1000000,
-        volume_ma_20=950000,
     )
 
     signal = generator.generate_signal(bullish_indicators)
@@ -46,19 +43,16 @@ def test_signal_generator_extreme_values():
     # Extremely overbought
     overbought_indicators = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=200.0,
+        current_price=200.0,
         ma_20=190.0,
         ma_50=180.0,
         rsi=85.0,  # Very overbought
-        macd=-1.0,
-        macd_signal=0.5,
         bb_upper=210.0,
         bb_middle=200.0,
         bb_lower=190.0,
+        volume_avg=1500000.0,
+        current_volume=2000000,
         atr=3.0,
-        volume=2000000,
-        volume_ma_20=1500000,
     )
 
     signal = generator.generate_signal(overbought_indicators)
@@ -68,19 +62,16 @@ def test_signal_generator_extreme_values():
     # Extremely oversold
     oversold_indicators = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=100.0,
+        current_price=100.0,
         ma_20=110.0,
         ma_50=120.0,
         rsi=15.0,  # Very oversold
-        macd=1.0,
-        macd_signal=-0.5,
         bb_upper=130.0,
         bb_middle=110.0,
         bb_lower=90.0,
+        volume_avg=2000000.0,
+        current_volume=3000000,
         atr=4.0,
-        volume=3000000,
-        volume_ma_20=2000000,
     )
 
     signal = generator.generate_signal(oversold_indicators)
@@ -93,13 +84,13 @@ def test_news_analyzer_with_missing_data():
     analyzer = SentimentAnalyzer()
 
     # Empty text
-    result = analyzer.analyze_text("")
+    result = analyzer.analyze("")
     assert isinstance(result, SentimentResult)
     assert result.sentiment in ["positive", "negative", "neutral"]
 
     # None text (should handle gracefully)
     try:
-        result = analyzer.analyze_text(None)
+        result = analyzer.analyze(None)
         assert isinstance(result, SentimentResult)
     except (TypeError, AttributeError):
         # Acceptable to raise error for None
@@ -114,17 +105,17 @@ def test_sentiment_analyzer_outputs_range():
     negative_text = "Terrible loss! Falling prices and bearish sentiment!"
     neutral_text = "The company announced a meeting."
 
-    pos_result = analyzer.analyze_text(positive_text)
+    pos_result = analyzer.analyze(positive_text)
     assert -1.0 <= pos_result.score <= 1.0
     assert 0.0 <= pos_result.confidence <= 1.0
     assert pos_result.sentiment == "positive"
 
-    neg_result = analyzer.analyze_text(negative_text)
+    neg_result = analyzer.analyze(negative_text)
     assert -1.0 <= neg_result.score <= 1.0
     assert 0.0 <= neg_result.confidence <= 1.0
     assert neg_result.sentiment == "negative"
 
-    neu_result = analyzer.analyze_text(neutral_text)
+    neu_result = analyzer.analyze(neutral_text)
     assert -1.0 <= neu_result.score <= 1.0
     assert 0.0 <= neu_result.confidence <= 1.0
 
@@ -164,19 +155,16 @@ def test_signal_generator_confidence_calculation():
     # Strong bullish setup
     strong_bull = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=150.0,
+        current_price=150.0,
         ma_20=148.0,
         ma_50=140.0,  # MA20 > MA50
         rsi=35.0,  # Slightly oversold
-        macd=2.0,  # Positive MACD
-        macd_signal=1.0,
         bb_upper=155.0,
         bb_middle=150.0,
         bb_lower=145.0,
+        volume_avg=1500000.0,
+        current_volume=2000000,
         atr=2.0,
-        volume=2000000,
-        volume_ma_20=1500000,  # High volume
     )
 
     signal = generator.generate_signal(strong_bull)
@@ -187,19 +175,16 @@ def test_signal_to_dict():
     """Test signal serialization to dictionary."""
     indicators = TechnicalIndicators(
         ticker="AAPL",
-        timestamp="2024-01-01",
-        close=150.0,
+        current_price=150.0,
         ma_20=145.0,
         ma_50=140.0,
         rsi=50.0,
-        macd=1.0,
-        macd_signal=0.5,
         bb_upper=160.0,
         bb_middle=150.0,
         bb_lower=140.0,
+        volume_avg=900000.0,
+        current_volume=1000000,
         atr=2.5,
-        volume=1000000,
-        volume_ma_20=900000,
     )
 
     generator = SignalGenerator()
@@ -220,19 +205,16 @@ def test_signal_get_emoji():
     """Test signal emoji generation."""
     indicators = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=100.0,
+        current_price=100.0,
         ma_20=100.0,
         ma_50=100.0,
         rsi=50.0,
-        macd=0.0,
-        macd_signal=0.0,
         bb_upper=110.0,
         bb_middle=100.0,
         bb_lower=90.0,
+        volume_avg=1000000.0,
+        current_volume=1000000,
         atr=2.0,
-        volume=1000000,
-        volume_ma_20=1000000,
     )
 
     signal = TradingSignal(
@@ -255,19 +237,16 @@ def test_signal_generator_batch_processing():
     for i in range(5):
         indicators = TechnicalIndicators(
             ticker=f"STOCK{i}",
-            timestamp="2024-01-01",
-            close=100.0 + i * 10,
+            current_price=100.0 + i * 10,
             ma_20=100.0 + i * 9,
             ma_50=100.0 + i * 8,
             rsi=50.0 + i,
-            macd=1.0,
-            macd_signal=0.5,
             bb_upper=110.0 + i * 10,
             bb_middle=100.0 + i * 10,
             bb_lower=90.0 + i * 10,
+            volume_avg=950000.0,
+            current_volume=1000000,
             atr=2.0,
-            volume=1000000,
-            volume_ma_20=950000,
         )
         indicators_list.append(indicators)
 
@@ -305,12 +284,16 @@ def test_sentiment_overall():
         "Minor decline",
     ]
 
-    overall = analyzer.get_overall_sentiment(texts)
+    # First analyze the texts
+    results = analyzer.analyze_batch(texts)
 
-    assert isinstance(overall, dict)
-    assert "sentiment" in overall
-    assert "avg_score" in overall
-    assert overall["sentiment"] in ["positive", "negative", "neutral"]
+    # Then get overall sentiment
+    sentiment, avg_score = analyzer.get_overall_sentiment(results)
+
+    assert isinstance(sentiment, str)
+    assert sentiment in ["positive", "negative", "neutral"]
+    assert isinstance(avg_score, float)
+    assert -1.0 <= avg_score <= 1.0
 
 
 def test_indicator_calculator_edge_cases():
@@ -363,19 +346,16 @@ def test_signal_generator_custom_thresholds():
 
     indicators = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=100.0,
+        current_price=100.0,
         ma_20=100.0,
         ma_50=95.0,
         rsi=72.0,  # Between 70 and 75
-        macd=0.5,
-        macd_signal=0.3,
         bb_upper=105.0,
         bb_middle=100.0,
         bb_lower=95.0,
+        volume_avg=950000.0,
+        current_volume=1000000,
         atr=2.0,
-        volume=1000000,
-        volume_ma_20=950000,
     )
 
     signal = generator.generate_signal(indicators)
@@ -403,7 +383,8 @@ def test_sentiment_distribution():
     assert "positive" in distribution
     assert "negative" in distribution
     assert "neutral" in distribution
-    assert distribution["positive"] + distribution["negative"] + distribution["neutral"] == 100.0
+    # Distribution returns counts, not percentages
+    assert distribution["positive"] + distribution["negative"] + distribution["neutral"] == len(texts)
 
 
 def test_signal_trend_description():
@@ -411,19 +392,16 @@ def test_signal_trend_description():
     # MA20 > MA50 (bullish trend)
     indicators_bull = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=100.0,
+        current_price=100.0,
         ma_20=105.0,
         ma_50=95.0,
         rsi=50.0,
-        macd=1.0,
-        macd_signal=0.5,
         bb_upper=110.0,
         bb_middle=100.0,
         bb_lower=90.0,
+        volume_avg=950000.0,
+        current_volume=1000000,
         atr=2.0,
-        volume=1000000,
-        volume_ma_20=950000,
     )
 
     signal_bull = TradingSignal(
@@ -440,19 +418,16 @@ def test_signal_trend_description():
     # MA20 < MA50 (bearish trend)
     indicators_bear = TechnicalIndicators(
         ticker="TEST",
-        timestamp="2024-01-01",
-        close=100.0,
+        current_price=100.0,
         ma_20=95.0,
         ma_50=105.0,
         rsi=50.0,
-        macd=-1.0,
-        macd_signal=-0.5,
         bb_upper=110.0,
         bb_middle=100.0,
         bb_lower=90.0,
+        volume_avg=950000.0,
+        current_volume=1000000,
         atr=2.0,
-        volume=1000000,
-        volume_ma_20=950000,
     )
 
     signal_bear = TradingSignal(
