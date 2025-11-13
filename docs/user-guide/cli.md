@@ -1,202 +1,426 @@
-# CLI Usage
+# CLI Reference
 
-## Overview
+Complete command-line interface reference for ZenMarket AI.
 
-ZenMarket AI provides a comprehensive command-line interface for all operations.
+---
 
-## General Syntax
+## Usage
 
 ```bash
 python -m src.cli [COMMAND] [OPTIONS]
 ```
 
-## Global Options
-
-```bash
---help, -h          Show help message
---version, -v       Show version
---verbose           Enable verbose output
---config FILE       Use custom config file
-```
+---
 
 ## Commands
 
-### brief
+### `brief` - Generate Financial Brief
 
-Generate financial analysis briefing.
+Generate a comprehensive financial brief with news, sentiment, and AI insights.
 
 ```bash
 python -m src.cli brief [OPTIONS]
-
-Options:
-  --symbols TEXT         Comma-separated symbols (required)
-  --output PATH         Output file path
-  --format [pdf|html]   Output format (default: pdf)
-  --ai-provider TEXT    AI provider (openai|anthropic)
-  --start DATE          Start date (YYYY-MM-DD)
-  --end DATE            End date (YYYY-MM-DD)
 ```
+
+**Options:**
+
+- `--symbols TEXT` - Comma-separated stock symbols (required)
+- `--format TEXT` - Output format: `markdown`, `html`, `pdf` (default: markdown)
+- `--output PATH` - Output file path (optional)
+- `--use-ai` - Enable AI summarization (default: true)
 
 **Examples:**
 
 ```bash
-# Basic usage
+# Single symbol
 python -m src.cli brief --symbols AAPL
 
-# Multiple symbols with custom output
-python -m src.cli brief --symbols AAPL,MSFT,GOOGL --output my_brief.pdf
+# Multiple symbols
+python -m src.cli brief --symbols AAPL,MSFT,GOOGL
 
-# With date range
-python -m src.cli brief --symbols AAPL --start 2024-01-01 --end 2024-12-31
+# Save to file
+python -m src.cli brief --symbols AAPL --output brief.md
+
+# PDF format
+python -m src.cli brief --symbols AAPL --format pdf
 ```
 
-### simulate
+---
 
-Run trading simulator (paper trading).
+### `advisor` - Generate Trading Signals
+
+Generate technical analysis and trading signals.
+
+```bash
+python -m src.cli advisor [OPTIONS]
+```
+
+**Options:**
+
+- `--symbol TEXT` - Stock symbol (required)
+- `--period TEXT` - Data period: `1mo`, `3mo`, `6mo`, `1y`, `2y` (default: 6mo)
+- `--chart` - Generate chart (default: true)
+- `--output PATH` - Output directory
+
+**Examples:**
+
+```bash
+# Basic analysis
+python -m src.cli advisor --symbol AAPL
+
+# Custom period
+python -m src.cli advisor --symbol AAPL --period 1y
+
+# Save chart
+python -m src.cli advisor --symbol AAPL --output ./reports
+```
+
+---
+
+### `simulate` - Run Trading Simulation
+
+Run paper trading simulation with a strategy.
 
 ```bash
 python -m src.cli simulate [OPTIONS]
-
-Options:
-  --symbol TEXT              Trading symbol (required)
-  --strategy TEXT            Strategy name
-  --risk-percent FLOAT       Risk per trade (default: 0.01)
-  --max-position-size FLOAT  Max position size (default: 0.20)
-  --max-daily-drawdown FLOAT Max daily drawdown (default: 0.05)
-  --initial-cash FLOAT       Initial cash (default: 100000)
 ```
+
+**Options:**
+
+- `--symbol TEXT` - Stock symbol (required)
+- `--strategy TEXT` - Strategy name: `conservative`, `moderate`, `aggressive`
+- `--capital FLOAT` - Initial capital (default: 100000)
+- `--period TEXT` - Simulation period (default: 6mo)
+- `--realtime` - Enable real-time simulation
 
 **Examples:**
 
 ```bash
-# Conservative strategy
-python -m src.cli simulate --symbol AAPL --strategy conservative
+# Basic simulation
+python -m src.cli simulate --symbol AAPL
 
-# Custom risk parameters
-python -m src.cli simulate --symbol MSFT \
-    --risk-percent 0.02 \
-    --max-position-size 0.15
+# Custom capital and strategy
+python -m src.cli simulate --symbol AAPL --capital 50000 --strategy aggressive
+
+# Real-time simulation
+python -m src.cli simulate --symbol AAPL --realtime
 ```
 
-### backtest
+---
 
-Run historical backtest.
+### `backtest` - Run Historical Backtest
+
+Backtest a trading strategy against historical data.
 
 ```bash
 python -m src.cli backtest [OPTIONS]
-
-Options:
-  --symbols TEXT        Comma-separated symbols
-  --start DATE          Start date (YYYY-MM-DD)
-  --end DATE            End date (YYYY-MM-DD)
-  --strategy TEXT       Strategy name
-  --output PATH         Output directory
-  --parallel            Run in parallel (for multiple symbols)
 ```
+
+**Options:**
+
+- `--symbol TEXT` - Stock symbol (required)
+- `--start DATE` - Start date (YYYY-MM-DD)
+- `--end DATE` - End date (YYYY-MM-DD)
+- `--strategy TEXT` - Strategy name
+- `--capital FLOAT` - Initial capital (default: 100000)
+- `--report` - Generate detailed report (default: true)
+- `--output PATH` - Output directory
 
 **Examples:**
 
 ```bash
-# Single symbol backtest
-python -m src.cli backtest --symbol AAPL --start 2024-01-01
+# Basic backtest
+python -m src.cli backtest --symbol AAPL --start 2024-01-01 --end 2024-12-31
 
-# Multiple symbols in parallel
-python -m src.cli backtest --symbols AAPL,MSFT,GOOGL --parallel
+# With custom strategy
+python -m src.cli backtest --symbol AAPL --strategy mean_reversion --start 2023-01-01
 
-# With custom output
-python -m src.cli backtest --symbol AAPL --output reports/backtests/
+# Save detailed report
+python -m src.cli backtest --symbol AAPL --report --output ./backtests
 ```
 
-## Configuration
+---
 
-CLI respects environment variables from `.env`:
+### `live` - Run Live Trading
+
+**⚠️ Use with extreme caution! Only for experienced traders.**
 
 ```bash
-# Override with environment variables
-TRADING_MODE=paper python -m src.cli simulate --symbol AAPL
-
-# Use custom config file
-python -m src.cli --config my_config.env brief --symbols AAPL
+python -m src.cli live [OPTIONS]
 ```
 
-## Logging
+**Options:**
 
-Control log level:
+- `--strategy TEXT` - Strategy name (required)
+- `--symbols TEXT` - Comma-separated symbols
+- `--broker TEXT` - Broker: `paper`, `ibkr`, `mt5` (default: paper)
+- `--dry-run` - Simulate without executing trades
+
+**Examples:**
 
 ```bash
-# Debug mode
-LOG_LEVEL=DEBUG python -m src.cli simulate --symbol AAPL
+# Paper trading (safe)
+python -m src.cli live --strategy conservative --symbols AAPL --broker paper
 
-# Quiet mode (errors only)
-LOG_LEVEL=ERROR python -m src.cli simulate --symbol AAPL
+# Dry run (no actual trades)
+python -m src.cli live --strategy moderate --symbols AAPL,MSFT --dry-run
 ```
 
-## Output Files
+!!! danger "Live Trading Warning"
+    - Always start with paper trading
+    - Test thoroughly before going live
+    - Use small position sizes initially
+    - Monitor constantly
+    - Understand the risks
 
-Default output locations:
+---
 
-- **Reports**: `reports/`
-- **Logs**: `logs/`
-- **Backtests**: `reports/backtests/`
-- **Journal**: `data/journal/`
+## Global Options
 
-## Error Handling
+Available for all commands:
 
-The CLI provides clear error messages:
+- `--help` - Show help message
+- `--version` - Show version
+- `--config PATH` - Path to config file
+- `--verbose` - Enable verbose output
+- `--quiet` - Suppress output
+- `--log-level TEXT` - Set log level: DEBUG, INFO, WARNING, ERROR
+
+**Examples:**
 
 ```bash
-# Missing required argument
-$ python -m src.cli brief
-Error: Missing required option '--symbols'
+# Verbose output
+python -m src.cli brief --symbols AAPL --verbose
 
-# Invalid symbol
-$ python -m src.cli simulate --symbol INVALID
-Error: Symbol 'INVALID' not found
+# Custom config
+python -m src.cli brief --symbols AAPL --config ./my-config.env
 
-# API key missing
-$ python -m src.cli brief --symbols AAPL
-Error: OPENAI_API_KEY or ANTHROPIC_API_KEY required in .env
+# Debug logging
+python -m src.cli brief --symbols AAPL --log-level DEBUG
 ```
 
-## Shell Completion
+---
 
-Generate shell completion:
+## Output Formats
+
+### Markdown (default)
 
 ```bash
-# Bash
-python -m src.cli --install-completion bash
-
-# Zsh
-python -m src.cli --install-completion zsh
-
-# Fish
-python -m src.cli --install-completion fish
+python -m src.cli brief --symbols AAPL --format markdown
 ```
 
-## Tips & Tricks
+Output: Human-readable markdown file
 
-### Batch Processing
+### HTML
+
+```bash
+python -m src.cli brief --symbols AAPL --format html
+```
+
+Output: Styled HTML report
+
+### PDF
+
+```bash
+python -m src.cli brief --symbols AAPL --format pdf
+```
+
+Output: Professional PDF document
+
+### JSON
+
+```bash
+python -m src.cli backtest --symbol AAPL --format json
+```
+
+Output: Machine-readable JSON
+
+---
+
+## Exit Codes
+
+- `0` - Success
+- `1` - General error
+- `2` - Configuration error
+- `3` - API error
+- `4` - Data error
+- `5` - Trading error
+
+---
+
+## Environment Variables
+
+Override config with environment variables:
+
+```bash
+# Set API key
+export OPENAI_API_KEY=sk-your-key
+
+# Run command
+python -m src.cli brief --symbols AAPL
+```
+
+---
+
+## Batch Processing
+
+### Multiple Symbols
 
 ```bash
 # Process multiple symbols
-for symbol in AAPL MSFT GOOGL; do
-    python -m src.cli brief --symbols $symbol --output reports/${symbol}_brief.pdf
+for symbol in AAPL MSFT GOOGL AMZN; do
+  python -m src.cli advisor --symbol $symbol
 done
 ```
 
-### Cron Jobs
+### Scheduled Execution
 
 ```bash
-# Daily briefing at 6 AM
-0 6 * * * cd /path/to/zenmarket-ai && python -m src.cli brief --symbols AAPL,MSFT
+# Run daily at 9:00 AM (cron)
+0 9 * * * cd /path/to/zenmarket-ai && python -m src.cli brief --symbols AAPL >> daily.log 2>&1
 ```
 
-### Docker Usage
+---
+
+## Piping and Redirection
+
+### Save Output
 
 ```bash
-docker run -it --rm \
-    -v $(pwd):/app \
-    -e OPENAI_API_KEY=$OPENAI_API_KEY \
-    zenmarket-ai:latest \
-    python -m src.cli brief --symbols AAPL
+python -m src.cli brief --symbols AAPL > brief.txt
 ```
+
+### Pipe to Other Commands
+
+```bash
+python -m src.cli brief --symbols AAPL | grep "BUY"
+```
+
+### Append to Log
+
+```bash
+python -m src.cli advisor --symbol AAPL >> advisor.log 2>&1
+```
+
+---
+
+## Debugging
+
+### Enable Debug Logging
+
+```bash
+python -m src.cli --log-level DEBUG brief --symbols AAPL
+```
+
+### Verbose Output
+
+```bash
+python -m src.cli --verbose advisor --symbol AAPL
+```
+
+### Stack Traces
+
+```bash
+# Python will show full stack trace on errors
+python -m src.cli brief --symbols INVALID_SYMBOL
+```
+
+---
+
+## Performance Tips
+
+### Parallel Processing
+
+```bash
+# Run multiple commands in parallel
+python -m src.cli advisor --symbol AAPL &
+python -m src.cli advisor --symbol MSFT &
+python -m src.cli advisor --symbol GOOGL &
+wait
+```
+
+### Caching
+
+```bash
+# Enable caching (in .env)
+ENABLE_CACHING=true
+```
+
+---
+
+## Common Workflows
+
+### Daily Morning Routine
+
+```bash
+#!/bin/bash
+# daily_routine.sh
+
+# Generate brief
+python -m src.cli brief --symbols AAPL,MSFT,GOOGL,AMZN
+
+# Check signals
+python -m src.cli advisor --symbol AAPL
+python -m src.cli advisor --symbol MSFT
+
+# Run simulation
+python -m src.cli simulate --symbol AAPL --period 1mo
+```
+
+### Weekly Backtest
+
+```bash
+#!/bin/bash
+# weekly_backtest.sh
+
+SYMBOLS="AAPL MSFT GOOGL AMZN TSLA"
+START="2024-01-01"
+END="2024-12-31"
+
+for symbol in $SYMBOLS; do
+  python -m src.cli backtest \
+    --symbol $symbol \
+    --start $START \
+    --end $END \
+    --output ./backtests
+done
+```
+
+---
+
+## Troubleshooting
+
+### Command Not Found
+
+```bash
+# Make sure you're in the project directory
+cd /path/to/zenmarket-ai
+
+# Or use absolute path
+python -m src.cli --help
+```
+
+### Module Import Error
+
+```bash
+# Install package
+pip install -e .
+```
+
+### API Key Error
+
+```bash
+# Check .env file exists
+ls -la .env
+
+# Verify key is set
+python -c "from src.utils.config_loader import get_config; print(get_config().openai_api_key)"
+```
+
+---
+
+## Next Steps
+
+- [See examples](examples.md)
+- [Understand trading logic](../trading-logic/signal_logic.md)
+- [Configure risk management](../trading-logic/risk_management.md)

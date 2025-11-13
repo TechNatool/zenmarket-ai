@@ -1,7 +1,7 @@
-site_name: ZenMarket AI
-site_description: AI-powered financial intelligence and market analysis system
+site_name: ZenMarket AI Documentation
+site_description: Professional-grade AI-powered financial intelligence and automated trading system
 site_author: TechNatool
-site_url: https://github.com/TechNatool/zenmarket-ai
+site_url: https://zenmarket-ai.technatool.com
 
 repo_name: TechNatool/zenmarket-ai
 repo_url: https://github.com/TechNatool/zenmarket-ai
@@ -11,12 +11,13 @@ copyright: Copyright &copy; 2025 TechNatool
 
 theme:
   name: material
+  language: en
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
-      accent: indigo
+      accent: deep purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -24,26 +25,89 @@ theme:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
-      accent: indigo
+      accent: deep purple
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
   features:
     - navigation.instant
     - navigation.tracking
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.path
+    - navigation.indexes
     - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
     - search.suggest
     - search.highlight
+    - search.share
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
   icon:
     repo: fontawesome/brands/github
+    logo: material/chart-line-variant
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/TechNatool/zenmarket-ai
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/zenmarket-ai/
+  version:
+    provider: mike
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.snippets
 
 plugins:
-  - search
+  - search:
+      lang: en
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - mkdocstrings:
       handlers:
         python:
@@ -59,44 +123,36 @@ plugins:
             members_order: source
             heading_level: 2
 
-markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - attr_list
-  - md_in_html
-  - tables
-  - footnotes
-  - def_list
-
 nav:
   - Home: index.md
-  - Getting Started:
-      - Installation: getting-started/installation.md
-      - Quick Start: getting-started/quickstart.md
-      - Configuration: getting-started/configuration.md
+  - Architecture: architecture.md
+
   - User Guide:
-      - CLI Usage: user-guide/cli.md
-      - Trading Simulator: user-guide/simulator.md
-      - Backtest Runner: user-guide/backtest.md
-  - Developer Guide:
-      - Contributing: CONTRIBUTING.md
-      - Code Style: developer-guide/code-style.md
-      - Testing: developer-guide/testing.md
-  - Security:
-      - Security Policy: SECURITY.md
-      - Code of Conduct: CODE_OF_CONDUCT.md
+    - Installation: user-guide/installation.md
+    - Configuration: user-guide/configuration.md
+    - CLI Reference: user-guide/cli.md
+    - Examples & Tutorials: user-guide/examples.md
+
+  - Modules:
+    - Advisor Module: modules/advisor.md
+    - Execution Module: modules/execution.md
+    - Backtest Module: modules/backtest.md
+    - Broker Module: modules/broker.md
+    - Sentiment Analysis: modules/sentiment.md
+    - AI Summarizer: modules/summarizer.md
+    - Utilities: modules/utils.md
+
+  - Trading Logic:
+    - Risk Management: trading-logic/risk_management.md
+    - Signal Generation: trading-logic/signal_logic.md
+    - Performance Metrics: trading-logic/performance_metrics.md
+
+  - Development:
+    - Contributing: CONTRIBUTING.md
+    - Testing Strategy: developer-guide/testing.md
+    - Code Style: developer-guide/code-style.md
+
+  - About:
+    - Security Policy: SECURITY.md
+    - Code of Conduct: CODE_OF_CONDUCT.md
+    - License: LICENSE
