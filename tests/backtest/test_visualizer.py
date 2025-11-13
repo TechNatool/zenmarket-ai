@@ -39,9 +39,7 @@ def sample_metrics():
     return PerformanceMetrics(
         start_date=datetime(2024, 1, 1),
         end_date=datetime(2024, 12, 31),
-        initial_equity=Decimal("100000"),
-        final_equity=Decimal("115000"),
-        peak_equity=Decimal("120000"),
+        duration_days=365,
         total_return_pct=15.0,
         annualized_return_pct=15.5,
         cagr_pct=15.2,
@@ -50,7 +48,6 @@ def sample_metrics():
         calmar_ratio=3.0,
         max_drawdown_pct=-5.0,
         max_drawdown_duration_days=15,
-        volatility_annualized_pct=10.5,
         total_trades=50,
         winning_trades=32,
         losing_trades=18,
@@ -61,11 +58,14 @@ def sample_metrics():
         avg_trade=Decimal("150.00"),
         largest_win=Decimal("800.00"),
         largest_loss=Decimal("-400.00"),
-        expectancy=Decimal("160.00"),
         avg_risk_reward_ratio=2.0,
+        expectancy=Decimal("160.00"),
+        final_equity=Decimal("115000"),
+        peak_equity=Decimal("120000"),
+        avg_daily_return_pct=0.041,
+        volatility_annualized_pct=10.5,
         max_consecutive_wins=7,
         max_consecutive_losses=4,
-        duration_days=365,
     )
 
 

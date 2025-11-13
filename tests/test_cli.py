@@ -213,7 +213,7 @@ def test_run_simulate_with_mocks():
         patch("src.cli.ExecutionEngine") as mock_engine_cls,
         patch("src.cli.IndicatorCalculator") as mock_indicator_cls,
         patch("src.cli.SignalGenerator") as mock_signal_cls,
-        patch("src.cli.yf.Ticker") as mock_ticker,
+        patch("yfinance.Ticker") as mock_ticker,
     ):
         # Setup mocks
         mock_broker = MagicMock()
