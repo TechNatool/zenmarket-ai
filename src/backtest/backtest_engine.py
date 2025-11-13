@@ -99,8 +99,8 @@ class BacktestEngine:
         execution_engine = ExecutionEngine(
             broker=broker,
             risk_limits=risk_limits,
-            default_sizing_method=self.config.sizing_method,
-            dry_run=False,  # Execute in backtest
+            sizing_method=self.config.sizing_method,
+            journal_enabled=False,  # Disable journal for backtesting
         )
 
         # 4. Initialize signal generator and indicator calculator
