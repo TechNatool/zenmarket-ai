@@ -34,6 +34,37 @@ Comprehensive risk management is critical for successful trading. This document 
 └─────────────────────────────────────────┘
 ```
 
+### Risk Management Decision Flow
+
+```mermaid
+flowchart TD
+    Start[New Trade Signal] --> Check1{Position Size<br/>Limit OK?}
+    Check1 -->|No| Reject1[❌ Reject: Position too large]
+    Check1 -->|Yes| Check2{Account<br/>Balance OK?}
+    Check2 -->|No| Reject2[❌ Reject: Insufficient funds]
+    Check2 -->|Yes| Check3{Daily Loss<br/>Limit OK?}
+    Check3 -->|No| Reject3[❌ Reject: Daily limit reached]
+    Check3 -->|Yes| Check4{Max Drawdown<br/>OK?}
+    Check4 -->|No| Reject4[❌ Reject: Drawdown too high]
+    Check4 -->|Yes| Check5{Max Open<br/>Positions OK?}
+    Check5 -->|No| Reject5[❌ Reject: Too many positions]
+    Check5 -->|Yes| Check6{Symbol<br/>Concentration OK?}
+    Check6 -->|No| Reject6[❌ Reject: Symbol overexposed]
+    Check6 -->|Yes| Check7{Circuit<br/>Breaker OK?}
+    Check7 -->|No| Reject7[❌ Reject: Market volatility high]
+    Check7 -->|Yes| Approve[✅ Trade Approved]
+
+    style Start fill:#e1f5ff
+    style Approve fill:#d4edda
+    style Reject1 fill:#f8d7da
+    style Reject2 fill:#f8d7da
+    style Reject3 fill:#f8d7da
+    style Reject4 fill:#f8d7da
+    style Reject5 fill:#f8d7da
+    style Reject6 fill:#f8d7da
+    style Reject7 fill:#f8d7da
+```
+
 ---
 
 ## Position Sizing

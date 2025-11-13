@@ -106,5 +106,6 @@ make docs-serve
 ## Next Steps
 
 - [CLI Reference](../user-guide/cli.md)
-- [Trading Simulator Guide](../user-guide/simulator.md)
-- [Backtest Runner Guide](../user-guide/backtest.md)
+- [Configuration Guide](../user-guide/configuration.md)
+- [Examples & Tutorials](../user-guide/examples.md)
+- [Backtest Module Documentation](../modules/backtest.md)

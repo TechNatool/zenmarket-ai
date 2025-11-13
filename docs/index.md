@@ -307,7 +307,7 @@ Comprehensive documentation on risk management, signal generation, and performan
 
 ## 🤝 Contributing
 
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! See our [Contributing Guide](../CONTRIBUTING.md) for details.
 
 Key areas for contribution:
 - New technical indicators

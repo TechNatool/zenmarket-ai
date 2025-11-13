@@ -28,6 +28,39 @@ Core engine for running backtests.
 - Progress tracking
 - Performance measurement
 
+#### Backtest Workflow
+
+```mermaid
+flowchart TD
+    Start[Start Backtest] --> Load[Load Historical Data]
+    Load --> Init[Initialize Broker<br/>Set Capital]
+    Init --> Loop{More<br/>Data?}
+
+    Loop -->|Yes| Bar[Process Next Bar]
+    Bar --> Update[Update Market State]
+    Update --> Strategy[Run Strategy Logic]
+    Strategy --> Signal{Signal<br/>Generated?}
+
+    Signal -->|No| Loop
+    Signal -->|Yes| Size[Calculate Position Size]
+    Size --> Risk[Risk Check]
+    Risk --> Execute{Execute<br/>Trade?}
+
+    Execute -->|No| Loop
+    Execute -->|Yes| Fill[Simulate Fill<br/>with Slippage]
+    Fill --> Record[Record Trade]
+    Record --> UpdatePnL[Update P&L]
+    UpdatePnL --> Loop
+
+    Loop -->|No| Metrics[Calculate Metrics]
+    Metrics --> Report[Generate Report]
+    Report --> End[Return Results]
+
+    style Start fill:#e1f5ff
+    style End fill:#d4edda
+    style Execute fill:#fff3cd
+```
+
 #### Usage
 
 ```python

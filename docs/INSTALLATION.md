@@ -206,5 +206,5 @@ cat .env | grep API_KEY
 ## Next Steps
 
 - Read [USAGE.md](USAGE.md) for detailed usage instructions
-- Configure automation: [AUTOMATION.md](AUTOMATION.md)
-- Review [API.md](API.md) for API documentation
+- Check the [User Guide](user-guide/installation.md) for configuration details
+- Review the [Developer Handbook](DEVELOPER_HANDBOOK.md) for development documentation

@@ -320,6 +320,6 @@ After installation:
 
 If you encounter issues:
 
-- 📖 Check [FAQ](../faq.md)
+- 📖 Check the [User Guide](cli.md) and [Examples](examples.md)
 - 🐛 Report bugs on [GitHub Issues](https://github.com/TechNatool/zenmarket-ai/issues)
 - 💬 Ask questions in [Discussions](https://github.com/TechNatool/zenmarket-ai/discussions)

@@ -77,6 +77,42 @@ Paper trading broker with realistic execution.
 - Order type support (Market, Limit, Stop)
 - Position tracking
 
+#### Position Sizing Workflow
+
+```mermaid
+flowchart LR
+    A[Trading Signal] --> B[Position Sizer]
+    B --> C{Sizing<br/>Method?}
+
+    C -->|Fixed| D[Fixed Quantity]
+    C -->|Percent| E[Calculate from<br/>Risk %]
+    C -->|Kelly| F[Kelly Criterion<br/>Formula]
+    C -->|ATR| G[ATR-based<br/>Sizing]
+
+    D --> H[Raw Position Size]
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I[Risk Manager]
+    I --> J{Passes<br/>Risk Checks?}
+
+    J -->|No| K[Adjust or Reject]
+    K --> L{Can Adjust?}
+    L -->|Yes| M[Reduce Size]
+    L -->|No| N[Reject Trade]
+
+    J -->|Yes| O[Final Position Size]
+    M --> O
+
+    O --> P[Execute Order]
+
+    style A fill:#e1f5ff
+    style O fill:#d4edda
+    style P fill:#d4edda
+    style N fill:#f8d7da
+```
+
 #### Slippage Model
 
 ```python

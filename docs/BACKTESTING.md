@@ -243,8 +243,8 @@ BacktestVisualizer.generate_markdown_report(
 ## Next Steps
 
 - Review [BROKERS.md](BROKERS.md) for live trading
-- See [examples/](../examples/) for sample strategies
-- Check [API documentation](api/backtest.md) for programmatic access
+- Check [Backtest Module Documentation](modules/backtest.md) for detailed API reference
+- See [Examples & Tutorials](user-guide/examples.md) for sample strategies
 
 ---
 
