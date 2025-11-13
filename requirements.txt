@@ -26,6 +26,20 @@ seaborn>=0.13.0
 markdown2>=2.4.12
 weasyprint>=61.0
 
+# === Backtesting & Performance Analysis (Phase 4) ===
+scipy>=1.11.0
+reportlab>=4.0.0
+tabulate>=0.9.0
+
+# === Configuration Management ===
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# === Broker Integration (Phase 4 - Optional) ===
+# Note: Install these separately based on your platform
+# ib-insync>=0.9.86  # For Interactive Brokers (Linux/Mac compatible)
+# MetaTrader5>=5.0.45  # For MT5 (Windows only)
+
 # === Optional: Enhanced Sentiment Analysis ===
 # transformers>=4.37.0
 # torch>=2.2.0
@@ -34,9 +48,15 @@ weasyprint>=61.0
 # === Development Dependencies ===
 pytest>=8.0.0
 pytest-cov>=4.1.0
+pytest-xdist>=3.5.0
+pytest-timeout>=2.2.0
+pytest-mock>=3.12.0
 black>=24.1.0
+isort>=5.13.0
+ruff>=0.1.14
 flake8>=7.0.0
 mypy>=1.8.0
+hypothesis>=6.96.0
 
 # === Utilities ===
 python-dateutil>=2.8.2

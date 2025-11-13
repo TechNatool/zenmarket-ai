@@ -6,9 +6,12 @@ Secure trading CLI with simulate/backtest/live modes.
 import argparse
 import sys
 from decimal import Decimal
+from pathlib import Path
 
 from .advisor.indicators import IndicatorCalculator
 from .advisor.signal_generator import SignalGenerator
+from .backtest.backtest_engine import run_backtest_cli
+from .brokers.broker_factory import BrokerFactory, BrokerType
 from .execution.broker_simulator import BrokerSimulator
 from .execution.execution_engine import ExecutionEngine
 from .execution.order_types import OrderType
@@ -315,14 +318,35 @@ def run_backtest(args) -> int:
     logger.info("BACKTEST MODE")
     logger.info("=" * 60)
 
+    # Parse symbols
+    symbols = [s.strip() for s in args.symbols.split(",")]
+
+    logger.info(f"Symbols: {symbols}")
     logger.info(f"Period: {args.start_date} to {args.end_date}")
     logger.info(f"Interval: {args.interval}")
+    logger.info(f"Initial Capital: ${args.initial_capital:,.2f}")
 
-    # TODO: Implement backtest runner
-    logger.warning("Backtest module not yet implemented")
-    logger.info("This will be implemented in src/backtest/runner.py")
+    try:
+        # Run backtest via the backtest engine
+        output_dir = Path("reports/backtest")
+        run_backtest_cli(
+            symbols=symbols,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            initial_capital=args.initial_capital,
+            output_dir=output_dir,
+        )
 
-    return 1
+        logger.info("\n" + "=" * 60)
+        logger.info("BACKTEST COMPLETED SUCCESSFULLY")
+        logger.info("=" * 60)
+        logger.info(f"\nReports saved to: {output_dir.absolute()}")
+
+        return 0
+
+    except Exception as e:
+        logger.error(f"Backtest failed: {e}", exc_info=True)
+        return 1
 
 
 def run_live(args) -> int:
@@ -350,13 +374,115 @@ def run_live(args) -> int:
         logger.info("\nLive trading cancelled by user")
         return 0
 
-    logger.error("ERROR: Live broker connections not yet implemented")
-    logger.info("Supported brokers will be added in future releases:")
-    logger.info("  - Interactive Brokers (IBKR)")
-    logger.info("  - MetaTrader 5 (MT5)")
-    logger.info("\nFor now, please use 'simulate' mode for paper trading")
+    # Parse symbols
+    symbols = [s.strip() for s in args.symbols.split(",")]
+    logger.info(f"Trading symbols: {symbols}")
 
-    return 1
+    try:
+        # Create broker via factory
+        logger.info(f"Connecting to {args.broker} broker...")
+
+        broker_type = BrokerType.IBKR if args.broker == "ibkr" else BrokerType.MT5
+        broker = BrokerFactory.create_from_env(broker_type)
+
+        if not broker.connect():
+            logger.error("Failed to connect to broker")
+            return 1
+
+        logger.info("Successfully connected to broker")
+
+        # Create risk limits
+        risk_limits = create_risk_limits(args)
+
+        # Create execution engine
+        engine = ExecutionEngine(
+            broker=broker,
+            risk_limits=risk_limits,
+            sizing_method=get_sizing_method(args.sizing_method),
+            journal_enabled=True,
+            dry_run=args.dry_run,
+        )
+
+        logger.info("Execution engine initialized")
+        logger.info(f"Risk per trade: {args.risk_per_trade:.2%}")
+        logger.info(f"Max positions: {args.max_positions}")
+
+        # Initialize advisor
+        indicator_calculator = IndicatorCalculator()
+        signal_generator = SignalGenerator()
+
+        # Main trading loop
+        logger.info("\nStarting live trading session...")
+        logger.info("Press Ctrl+C to stop")
+
+        import yfinance as yf
+
+        for symbol in symbols:
+            try:
+                logger.info(f"\n{'='*60}")
+                logger.info(f"Analyzing {symbol}")
+                logger.info("=" * 60)
+
+                # Fetch latest data
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(period="3mo", interval="1d")
+
+                if df.empty or len(df) < 50:
+                    logger.warning(f"Insufficient data for {symbol}")
+                    continue
+
+                # Calculate indicators
+                indicators = indicator_calculator.calculate_all_indicators(symbol, df)
+
+                if not indicators:
+                    logger.warning(f"Could not calculate indicators for {symbol}")
+                    continue
+
+                # Generate signal
+                signal = signal_generator.generate_signal(indicators)
+
+                logger.info(
+                    f"\nSignal: {signal.signal.value} (confidence: {signal.confidence:.2%})"
+                )
+                logger.info(f"Reasons: {', '.join(signal.reasons)}")
+
+                # Execute signal
+                orders = engine.execute_signal(
+                    signal=signal,
+                    order_type=get_order_type(args.order_type),
+                    risk_percent=args.risk_per_trade,
+                    dry_run=args.dry_run,
+                )
+
+                if orders:
+                    for order in orders:
+                        logger.info(f"✓ Order executed: {order.order_id}")
+
+            except Exception as e:
+                logger.error(f"Error processing {symbol}: {e}", exc_info=True)
+
+        # Print summary
+        logger.info("\n" + "=" * 60)
+        logger.info("LIVE TRADING SESSION SUMMARY")
+        logger.info("=" * 60)
+
+        status = engine.get_status()
+        logger.info(f"\nBroker: {status['broker']}")
+        logger.info(f"Connected: {status['connected']}")
+
+        # Shutdown
+        engine.shutdown()
+        broker.disconnect()
+
+        logger.info("\n" + "=" * 60)
+        logger.info("Live trading session completed")
+        logger.info("=" * 60)
+
+        return 0
+
+    except Exception as e:
+        logger.error(f"Live trading failed: {e}", exc_info=True)
+        return 1
 
 
 def main():
