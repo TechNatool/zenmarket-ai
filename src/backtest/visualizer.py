@@ -251,8 +251,8 @@ class BacktestVisualizer:
         metrics: PerformanceMetrics,
         strategy_name: str,
         symbols: list[str],
-        equity_curve: pd.DataFrame,
-        trades: list[dict[str, Any]],
+        _equity_curve: pd.DataFrame,
+        _trades: list[dict[str, Any]],
         output_path: Path,
     ) -> None:
         """Generate a comprehensive PDF backtest report.
@@ -261,8 +261,8 @@ class BacktestVisualizer:
             metrics: Performance metrics
             strategy_name: Name of the strategy
             symbols: List of symbols traded
-            equity_curve: DataFrame with equity curve data
-            trades: List of trade dictionaries
+            _equity_curve: DataFrame with equity curve data (reserved for future use)
+            _trades: List of trade dictionaries (reserved for future use)
             output_path: Path to save the PDF report
         """
         doc = SimpleDocTemplate(str(output_path), pagesize=letter)
@@ -363,12 +363,12 @@ class BacktestVisualizer:
         doc.build(story)
 
     @staticmethod
-    def print_summary(metrics: PerformanceMetrics, strategy_name: str) -> None:
+    def print_summary(metrics: PerformanceMetrics, _strategy_name: str) -> None:
         """Print a summary of the backtest results to console.
 
         Args:
             metrics: Performance metrics
-            strategy_name: Name of the strategy
+            _strategy_name: Name of the strategy (reserved for future use)
         """
 
         # Performance Summary

@@ -25,7 +25,7 @@ from typing import Any
 # MT5 is Windows-only
 if platform.system() == "Windows":
     try:
-        import MetaTrader5 as mt5
+        import MetaTrader5 as mt5  # noqa: N813 (official library name)
     except ImportError:
         mt5 = None  # type: ignore
 else:

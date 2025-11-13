@@ -21,7 +21,13 @@ from decimal import Decimal
 from typing import Any
 
 try:
-    from ib_insync import IB, Contract, LimitOrder, MarketOrder, Stock
+    from ib_insync import (
+        IB,
+        Contract,
+        LimitOrder,
+        MarketOrder,
+        Stock,
+    )
     from ib_insync import Order as IBOrder
 except ImportError:
     # Graceful degradation if ib_insync not installed
