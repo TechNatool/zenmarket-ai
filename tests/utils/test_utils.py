@@ -165,7 +165,8 @@ def test_news_fetcher_empty_returns():
         mock_result.entries = []
         mock_parse.return_value = mock_result
 
-        articles = fetcher.fetch_from_rss("yahoo_finance")
+        # Call with a dict, not a string
+        articles = fetcher.fetch_from_rss({"test_feed": "https://example.com/rss"})
 
         assert isinstance(articles, list)
         assert len(articles) == 0
@@ -211,13 +212,15 @@ def test_news_fetcher_with_mock_rss():
     mock_entry.link = "https://example.com/news"
     mock_entry.published = "Mon, 15 Jan 2024 12:00:00 GMT"
     mock_entry.source = {"title": "Test Source"}
+    mock_entry.published_parsed = (2024, 1, 15, 12, 0, 0, 0, 15, 0)
 
     with patch("src.core.news_fetcher.feedparser.parse") as mock_parse:
         mock_result = Mock()
         mock_result.entries = [mock_entry]
         mock_parse.return_value = mock_result
 
-        articles = fetcher.fetch_from_rss("yahoo_finance")
+        # Call with a dict, not a string
+        articles = fetcher.fetch_from_rss({"test_feed": "https://example.com/rss"})
 
         assert isinstance(articles, list)
         # Should process the mock entry

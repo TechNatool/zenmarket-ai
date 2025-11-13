@@ -180,6 +180,8 @@ def test_generate_pdf_report_with_mock(
     sample_metrics, sample_equity_curve, sample_trades, tmp_path
 ):
     """Test PDF generation with mocked ReportLab."""
+    from unittest.mock import ANY
+
     visualizer = BacktestVisualizer()
     output_file = tmp_path / "report.pdf"
 
@@ -197,8 +199,8 @@ def test_generate_pdf_report_with_mock(
             output_path=output_file,
         )
 
-        # Verify SimpleDocTemplate was called
-        mock_doc.assert_called_once_with(str(output_file), pagesize=MagicMock())
+        # Verify SimpleDocTemplate was called (don't check exact pagesize value)
+        mock_doc.assert_called_once_with(str(output_file), pagesize=ANY)
         mock_doc_instance.build.assert_called_once()
 
 
