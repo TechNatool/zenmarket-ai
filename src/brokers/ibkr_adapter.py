@@ -151,7 +151,6 @@ class IBKRAdapter(BrokerBase):
                         if ib_pos.position != 0
                         else Decimal("0")
                     ),
-                    market_value=Decimal(str(ib_pos.marketValue)),
                     unrealized_pnl=Decimal(str(ib_pos.unrealizedPNL)),
                     current_price=Decimal(str(ib_pos.marketPrice)),
                 )
