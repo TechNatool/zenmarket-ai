@@ -1,8 +1,6 @@
 """Tests for CLI module."""
 
 import sys
-from decimal import Decimal
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -25,9 +23,8 @@ from src.execution.risk_manager import RiskLimits
 
 def test_cli_help_output():
     """Test CLI help output."""
-    with pytest.raises(SystemExit) as exc_info:
-        with patch.object(sys, "argv", ["cli.py", "--help"]):
-            parse_args()
+    with pytest.raises(SystemExit) as exc_info, patch.object(sys, "argv", ["cli.py", "--help"]):
+        parse_args()
     assert exc_info.value.code == 0
 
 
@@ -79,9 +76,8 @@ def test_cli_live_requires_confirmation():
     test_args = ["cli.py", "live", "--symbols", "AAPL", "--broker", "ibkr"]
 
     # Missing --confirm-live should fail
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", test_args):
-            parse_args()
+    with pytest.raises(SystemExit), patch.object(sys, "argv", test_args):
+        parse_args()
 
 
 def test_cli_live_dry_run():
@@ -108,9 +104,8 @@ def test_cli_invalid_command_returns_error():
     """Test that invalid commands are rejected."""
     test_args = ["cli.py", "invalid_command"]
 
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", test_args):
-            parse_args()
+    with pytest.raises(SystemExit), patch.object(sys, "argv", test_args):
+        parse_args()
 
 
 def test_cli_config_loading():

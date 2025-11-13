@@ -2,8 +2,7 @@
 
 import sys
 from argparse import Namespace
-from decimal import Decimal
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -559,9 +558,7 @@ def test_run_live_broker_connection_fails(mock_args_live):
         mock_broker.connect.assert_called_once()
 
 
-def test_run_live_success(
-    mock_args_live, mock_market_data, mock_indicators, mock_signal
-):
+def test_run_live_success(mock_args_live, mock_market_data, mock_indicators, mock_signal):
     """Test run_live executes successfully."""
     with (
         patch("builtins.input", return_value="I UNDERSTAND THE RISKS"),

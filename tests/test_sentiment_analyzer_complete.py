@@ -53,7 +53,9 @@ def test_analyze_with_ai_openai(analyzer, mock_config_openai):
         mock_openai = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = '{"sentiment": "positive", "score": 0.8, "confidence": 0.9}'
+        mock_response.choices[0].message.content = (
+            '{"sentiment": "positive", "score": 0.8, "confidence": 0.9}'
+        )
         mock_openai.chat.completions.create.return_value = mock_response
 
         with patch.dict("sys.modules", {"openai": mock_openai}):
@@ -75,7 +77,9 @@ def test_analyze_with_ai_anthropic(analyzer, mock_config_anthropic):
         mock_client = Mock()
         mock_message = Mock()
         mock_message.content = [Mock()]
-        mock_message.content[0].text = '{"sentiment": "negative", "score": -0.6, "confidence": 0.85}'
+        mock_message.content[0].text = (
+            '{"sentiment": "negative", "score": -0.6, "confidence": 0.85}'
+        )
         mock_client.messages.create.return_value = mock_message
         mock_anthropic.Anthropic.return_value = mock_client
 
@@ -123,7 +127,9 @@ def test_analyze_openai_long_text(analyzer, mock_config_openai):
         mock_openai = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = '{"sentiment": "neutral", "score": 0.1, "confidence": 0.7}'
+        mock_response.choices[0].message.content = (
+            '{"sentiment": "neutral", "score": 0.1, "confidence": 0.7}'
+        )
         mock_openai.chat.completions.create.return_value = mock_response
 
         with patch.dict("sys.modules", {"openai": mock_openai}):
@@ -377,7 +383,9 @@ def test_openai_model_configuration(analyzer, mock_config_openai):
         mock_openai = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = '{"sentiment": "neutral", "score": 0.0, "confidence": 0.5}'
+        mock_response.choices[0].message.content = (
+            '{"sentiment": "neutral", "score": 0.0, "confidence": 0.5}'
+        )
         mock_openai.chat.completions.create.return_value = mock_response
 
         with patch.dict("sys.modules", {"openai": mock_openai}):

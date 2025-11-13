@@ -1,7 +1,6 @@
 """Tests for advisor modules (signal generator, sentiment analyzer, etc.)."""
 
 import pandas as pd
-import pytest
 
 from src.advisor.indicators import IndicatorCalculator, TechnicalIndicators
 from src.advisor.signal_generator import SignalGenerator, SignalType, TradingSignal
@@ -384,7 +383,9 @@ def test_sentiment_distribution():
     assert "negative" in distribution
     assert "neutral" in distribution
     # Distribution returns counts, not percentages
-    assert distribution["positive"] + distribution["negative"] + distribution["neutral"] == len(texts)
+    assert distribution["positive"] + distribution["negative"] + distribution["neutral"] == len(
+        texts
+    )
 
 
 def test_signal_trend_description():

@@ -6,12 +6,15 @@ Sends daily reports via Telegram bot.
 
 import os
 import sys
-import requests
 from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
 
 
-def send_telegram_document(bot_token: str, chat_id: str, file_path: Path, caption: str = None) -> bool:
+def send_telegram_document(
+    bot_token: str, chat_id: str, file_path: Path, caption: str = None
+) -> bool:
     """
     Send a document via Telegram bot.
 
@@ -31,12 +34,12 @@ def send_telegram_document(bot_token: str, chat_id: str, file_path: Path, captio
         return False
 
     try:
-        with open(file_path, 'rb') as f:
-            files = {'document': f}
+        with open(file_path, "rb") as f:
+            files = {"document": f}
             data = {
-                'chat_id': chat_id,
-                'caption': caption or f"ZenMarket AI Report - {file_path.stem}",
-                'parse_mode': 'Markdown'
+                "chat_id": chat_id,
+                "caption": caption or f"ZenMarket AI Report - {file_path.stem}",
+                "parse_mode": "Markdown",
             }
 
             print(f"Sending {file_path.name} to Telegram...")
@@ -45,10 +48,9 @@ def send_telegram_document(bot_token: str, chat_id: str, file_path: Path, captio
             if response.status_code == 200:
                 print("✓ Document sent successfully!")
                 return True
-            else:
-                print(f"✗ Failed to send document: {response.status_code}")
-                print(f"Response: {response.text}")
-                return False
+            print(f"✗ Failed to send document: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
 
     except Exception as e:
         print(f"✗ Error sending document: {e}")
@@ -70,19 +72,14 @@ def send_telegram_message(bot_token: str, chat_id: str, message: str) -> bool:
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
     try:
-        data = {
-            'chat_id': chat_id,
-            'text': message,
-            'parse_mode': 'Markdown'
-        }
+        data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
 
         response = requests.post(url, data=data, timeout=10)
 
         if response.status_code == 200:
             return True
-        else:
-            print(f"Failed to send message: {response.status_code}")
-            return False
+        print(f"Failed to send message: {response.status_code}")
+        return False
 
     except Exception as e:
         print(f"Error sending message: {e}")
@@ -94,8 +91,8 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
-    chat_id = os.getenv('TELEGRAM_CHAT_ID')
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     if not bot_token or not chat_id:
         print("Error: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set in .env file")
@@ -130,6 +127,7 @@ def main():
 
     # Send greeting message
     from datetime import datetime
+
     date_str = datetime.now().strftime("%Y-%m-%d")
     greeting = f"📊 *ZenMarket AI - Daily Financial Brief*\n📅 {date_str}\n\n🤖 Your automated market intelligence report is ready!"
 
@@ -137,10 +135,7 @@ def main():
 
     # Send the document
     success = send_telegram_document(
-        bot_token,
-        chat_id,
-        file_path,
-        caption=f"📈 Daily Market Report - {date_str}"
+        bot_token, chat_id, file_path, caption=f"📈 Daily Market Report - {date_str}"
     )
 
     if success:

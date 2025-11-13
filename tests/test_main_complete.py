@@ -1,7 +1,7 @@
 """Comprehensive tests for main.py to reach 90% coverage."""
 
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -74,7 +74,9 @@ def mock_sentiment_results():
     ]
 
 
-def test_run_daily_report_success_with_ai(mock_news_articles, mock_market_snapshots, mock_sentiment_results):
+def test_run_daily_report_success_with_ai(
+    mock_news_articles, mock_market_snapshots, mock_sentiment_results
+):
     """Test successful run_daily_report with AI enabled."""
     with (
         patch("src.main.NewsFetcher") as MockNewsFetcher,
@@ -149,7 +151,9 @@ def test_run_daily_report_success_with_ai(mock_news_articles, mock_market_snapsh
         mock_report_gen.generate_report.assert_called_once()
 
 
-def test_run_daily_report_without_ai(mock_news_articles, mock_market_snapshots, mock_sentiment_results):
+def test_run_daily_report_without_ai(
+    mock_news_articles, mock_market_snapshots, mock_sentiment_results
+):
     """Test run_daily_report with AI disabled (fallback mode)."""
     with (
         patch("src.main.NewsFetcher") as MockNewsFetcher,
@@ -178,7 +182,11 @@ def test_run_daily_report_without_ai(mock_news_articles, mock_market_snapshots, 
         mock_sentiment_analyzer = Mock()
         mock_sentiment_analyzer.analyze_batch.return_value = mock_sentiment_results
         mock_sentiment_analyzer.get_overall_sentiment.return_value = ("positive", 0.75)
-        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {"positive": 2, "negative": 0, "neutral": 0}
+        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {
+            "positive": 2,
+            "negative": 0,
+            "neutral": 0,
+        }
         MockSentimentAnalyzer.return_value = mock_sentiment_analyzer
 
         mock_summarizer = Mock()
@@ -231,7 +239,11 @@ def test_run_daily_report_no_articles(mock_market_snapshots, mock_sentiment_resu
         mock_sentiment_analyzer = Mock()
         mock_sentiment_analyzer.analyze_batch.return_value = []
         mock_sentiment_analyzer.get_overall_sentiment.return_value = ("neutral", 0.0)
-        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {"positive": 0, "negative": 0, "neutral": 0}
+        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {
+            "positive": 0,
+            "negative": 0,
+            "neutral": 0,
+        }
         MockSentimentAnalyzer.return_value = mock_sentiment_analyzer
 
         mock_summarizer = Mock()
@@ -250,7 +262,9 @@ def test_run_daily_report_no_articles(mock_market_snapshots, mock_sentiment_resu
         assert result["statistics"]["articles_fetched"] == 0
 
 
-def test_run_daily_report_ai_summary_fails(mock_news_articles, mock_market_snapshots, mock_sentiment_results):
+def test_run_daily_report_ai_summary_fails(
+    mock_news_articles, mock_market_snapshots, mock_sentiment_results
+):
     """Test run_daily_report handles AI summary failures gracefully."""
     with (
         patch("src.main.NewsFetcher") as MockNewsFetcher,
@@ -279,7 +293,11 @@ def test_run_daily_report_ai_summary_fails(mock_news_articles, mock_market_snaps
         mock_sentiment_analyzer = Mock()
         mock_sentiment_analyzer.analyze_batch.return_value = mock_sentiment_results
         mock_sentiment_analyzer.get_overall_sentiment.return_value = ("positive", 0.75)
-        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {"positive": 2, "negative": 0, "neutral": 0}
+        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {
+            "positive": 2,
+            "negative": 0,
+            "neutral": 0,
+        }
         MockSentimentAnalyzer.return_value = mock_sentiment_analyzer
 
         # AI summarizer fails
@@ -325,7 +343,9 @@ def test_run_daily_report_critical_error():
         assert "Network error" in result["error"]
 
 
-def test_run_daily_report_custom_output_formats(mock_news_articles, mock_market_snapshots, mock_sentiment_results):
+def test_run_daily_report_custom_output_formats(
+    mock_news_articles, mock_market_snapshots, mock_sentiment_results
+):
     """Test run_daily_report with custom output formats."""
     with (
         patch("src.main.NewsFetcher") as MockNewsFetcher,
@@ -354,7 +374,11 @@ def test_run_daily_report_custom_output_formats(mock_news_articles, mock_market_
         mock_sentiment_analyzer = Mock()
         mock_sentiment_analyzer.analyze_batch.return_value = mock_sentiment_results
         mock_sentiment_analyzer.get_overall_sentiment.return_value = ("positive", 0.75)
-        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {"positive": 2, "negative": 0, "neutral": 0}
+        mock_sentiment_analyzer.get_sentiment_distribution.return_value = {
+            "positive": 2,
+            "negative": 0,
+            "neutral": 0,
+        }
         MockSentimentAnalyzer.return_value = mock_sentiment_analyzer
 
         mock_summarizer = Mock()
@@ -582,7 +606,9 @@ def test_main_cli_format_options():
             main()
 
         # Should pass custom formats to run_daily_report
-        mock_run_daily_report.assert_called_once_with(use_ai=True, output_formats=["markdown", "pdf"])
+        mock_run_daily_report.assert_called_once_with(
+            use_ai=True, output_formats=["markdown", "pdf"]
+        )
 
 
 def test_main_cli_no_charts():

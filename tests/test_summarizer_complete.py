@@ -155,9 +155,7 @@ def test_summarize_article_no_ai_fallback(mock_config_no_ai):
 
         # Test fallback (truncation)
         long_content = " ".join(["word"] * 100)
-        result = summarizer.summarize_article(
-            title="Test", content=long_content, max_words=10
-        )
+        result = summarizer.summarize_article(title="Test", content=long_content, max_words=10)
 
         assert result.endswith("...")
         word_count = len(result.split()) - 1  # -1 for "..."
@@ -196,7 +194,9 @@ def test_generate_market_insights_openai(mock_config_openai, sample_market_data)
         mock_openai_module = Mock()
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = "Markets show strong momentum with tech leading gains."
+        mock_response.choices[0].message.content = (
+            "Markets show strong momentum with tech leading gains."
+        )
         mock_openai_module.chat.completions.create.return_value = mock_response
 
         with patch.dict("sys.modules", {"openai": mock_openai_module}):
@@ -439,7 +439,9 @@ def test_generate_recommendations_interest_rates(sample_market_data):
             market_data=sample_market_data, sentiment="neutral", news_categories=news_categories
         )
 
-        assert any("central bank" in rec.lower() or "rate" in rec.lower() for rec in recommendations)
+        assert any(
+            "central bank" in rec.lower() or "rate" in rec.lower() for rec in recommendations
+        )
 
 
 def test_generate_recommendations_earnings_season(sample_market_data):
@@ -467,7 +469,9 @@ def test_generate_recommendations_geopolitics(sample_market_data):
             market_data=sample_market_data, sentiment="neutral", news_categories=news_categories
         )
 
-        assert any("geopolitical" in rec.lower() or "safe-haven" in rec.lower() for rec in recommendations)
+        assert any(
+            "geopolitical" in rec.lower() or "safe-haven" in rec.lower() for rec in recommendations
+        )
 
 
 def test_generate_recommendations_default(sample_market_data):
@@ -501,7 +505,12 @@ def test_generate_recommendations_max_five():
 
         # Create conditions for many recommendations
         market_data = {
-            f"TICKER{i}": {"name": f"Asset {i}", "last_price": 100.0, "change_percent": 1.0, "volatility": 30.0}
+            f"TICKER{i}": {
+                "name": f"Asset {i}",
+                "last_price": 100.0,
+                "change_percent": 1.0,
+                "volatility": 30.0,
+            }
             for i in range(10)
         }
 

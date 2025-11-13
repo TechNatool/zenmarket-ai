@@ -1,9 +1,8 @@
 """Tests for backtest visualizer module."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -177,7 +176,9 @@ def test_visualizer_returns_distribution_to_file(sample_trades, tmp_path):
     assert output_file.stat().st_size > 0
 
 
-def test_generate_pdf_report_with_mock(sample_metrics, sample_equity_curve, sample_trades, tmp_path):
+def test_generate_pdf_report_with_mock(
+    sample_metrics, sample_equity_curve, sample_trades, tmp_path
+):
     """Test PDF generation with mocked ReportLab."""
     visualizer = BacktestVisualizer()
     output_file = tmp_path / "report.pdf"

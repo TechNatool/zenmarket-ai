@@ -1,7 +1,7 @@
 """Tests for main entry point module."""
 
 import sys
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -57,9 +57,7 @@ def test_run_daily_report_with_mocks():
         mock_market.return_value = mock_market_instance
 
         mock_sentiment_instance = Mock()
-        mock_sentiment_instance.analyze_batch.return_value = [
-            Mock(sentiment="positive", score=0.8)
-        ]
+        mock_sentiment_instance.analyze_batch.return_value = [Mock(sentiment="positive", score=0.8)]
         mock_sentiment.return_value = mock_sentiment_instance
 
         mock_summarizer_instance = Mock()

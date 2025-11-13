@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
@@ -133,7 +133,9 @@ def test_generate_report_markdown_only(
         mock_date = datetime(2025, 1, 15, 12, 0, 0)
 
         with (
-            patch.object(generator, "_generate_markdown", return_value="# Test Report") as mock_gen_md,
+            patch.object(
+                generator, "_generate_markdown", return_value="# Test Report"
+            ) as mock_gen_md,
             patch.object(
                 generator, "_save_markdown", return_value=Path("/tmp/test.md")
             ) as mock_save_md,
@@ -379,6 +381,7 @@ def test_save_html_import_error(mock_config):
 
         # Mock the import to raise ImportError
         import builtins
+
         real_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -433,6 +436,7 @@ def test_save_pdf_import_error(mock_config):
 
         # Mock the import to raise ImportError
         import builtins
+
         real_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):

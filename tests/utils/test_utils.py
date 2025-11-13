@@ -1,11 +1,9 @@
 """Tests for utility modules (logger, date_utils, config, summarizer, news_fetcher)."""
 
 import logging
-from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime
+from unittest.mock import Mock, patch
 
-import pytest
 import pytz
 
 from src.core.news_fetcher import NewsArticle, NewsFetcher
