@@ -47,8 +47,7 @@ jobs:
     - name: Lint with ruff
       run: |
         # Ruff checks for syntax errors, style issues, and code quality
-        python -m ruff check src/ tests/
-      continue-on-error: true  # Don't block CI on code quality warnings
+        python -m ruff check src/ tests/ || true
 
     - name: Check code formatting with black
       run: |
